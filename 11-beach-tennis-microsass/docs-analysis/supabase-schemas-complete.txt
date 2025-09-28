@@ -1,0 +1,548 @@
+# VERANA BEACH TENNIS - SCHEMAS SQL COMPLETOS DO SUPABASE (REVISÃO 2.0)
+
+**Versão: 2.0.0**  
+**Data: 28/09/2025**  
+**Melhorias:** Controle granular de módulos + Relatórios configuráveis + CRUDs completos
+
+---
+
+## SEÇÃO 1: EXTENSÕES E CONFIGURAÇÕES INICIAIS
+
+```sql
+-- Habilitar extensões necessárias
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "postgis";
+
+-- Configurar timezone padrão
+SET timezone = 'America/Sao_Paulo';
+
+-- Habilitar RLS globalmente
+ALTER DATABASE postgres SET row_security = on;
+```
+
+---
+
+## SEÇÃO 2: ENUMS E TIPOS PERSONALIZADOS (REVISÃO COMPLETA)
+
+```sql
+-- Tipos de usuário
+CREATE TYPE user_role AS ENUM (
+  'super_admin',
+  'arena_admin', 
+  'funcionario',
+  'professor',
+  'aluno'
+);
+
+-- Status gerais
+CREATE TYPE status_geral AS ENUM ('ativo', 'inativo', 'suspenso', 'bloqueado');
+
+-- Tipos de esporte
+CREATE TYPE tipo_esporte AS ENUM ('beach_tennis', 'padel', 'tenis', 'futevolei');
+
+-- Tipos de piso
+CREATE TYPE tipo_piso AS ENUM ('areia', 'saibro', 'sintetico', 'concreto', 'grama');
+
+-- Status de agendamento
+CREATE TYPE status_agendamento AS ENUM ('confirmado', 'pendente', 'cancelado', 'realizado', 'no_show');
+
+-- Status de pagamento
+CREATE TYPE status_pagamento AS ENUM ('pendente', 'pago', 'parcial', 'cancelado', 'vencido', 'estornado');
+
+-- Formas de pagamento
+CREATE TYPE forma_pagamento AS ENUM ('pix', 'cartao_credito', 'cartao_debito', 'dinheiro', 'boleto', 'credito', 'transferencia');
+
+-- Tipos de agendamento
+CREATE TYPE tipo_agendamento AS ENUM ('avulso', 'aula', 'torneio', 'evento', 'manutencao', 'bloqueio');
+
+-- Tipos de check-in
+CREATE TYPE tipo_checkin AS ENUM ('qrcode', 'geolocalizacao', 'manual', 'biometria', 'facial');
+
+-- Status de check-in
+CREATE TYPE status_checkin AS ENUM ('presente', 'ausente', 'atrasado', 'cancelado');
+
+-- Níveis de jogo
+CREATE TYPE nivel_jogo AS ENUM ('iniciante', 'intermediario', 'intermediario_avancado', 'avancado', 'profissional');
+
+-- Gêneros
+CREATE TYPE genero AS ENUM ('masculino', 'feminino', 'outro', 'nao_informado');
+
+-- Dominância
+CREATE TYPE dominancia AS ENUM ('destro', 'canhoto', 'ambidestro');
+
+-- Posição preferida
+CREATE TYPE posicao_preferida AS ENUM ('rede', 'fundo', 'ambas', 'especialista_rede', 'especialista_fundo');
+
+-- Tipos de plano
+CREATE TYPE tipo_plano AS ENUM ('mensal', 'trimestral', 'semestral', 'anual', 'avulso');
+
+-- Status de contrato
+CREATE TYPE status_contrato AS ENUM ('ativo', 'suspenso', 'cancelado', 'inadimplente', 'pausado');
+
+-- Status de fatura
+CREATE TYPE status_fatura AS ENUM ('pendente', 'paga', 'vencida', 'cancelada', 'parcial');
+
+-- Tipos de movimentação financeira
+CREATE TYPE tipo_movimentacao AS ENUM ('receita', 'despesa', 'transferencia', 'estorno');
+
+-- Categorias financeiras
+CREATE TYPE categoria_financeira AS ENUM (
+  'mensalidade', 'aula_avulsa', 'aluguel_quadra', 'torneio', 'evento',
+  'produto', 'multa', 'taxa', 'desconto', 'promocao',
+  'manutencao', 'equipamento', 'funcionario', 'marketing', 'outros'
+);
+
+-- Tipos de evento
+CREATE TYPE tipo_evento AS ENUM ('workshop', 'clinica', 'festa', 'campeonato', 'promocional', 'corporativo');
+
+-- Status de evento
+CREATE TYPE status_evento AS ENUM ('planejado', 'divulgado', 'aberto', 'realizado', 'cancelado');
+
+-- Status de inscrição
+CREATE TYPE status_inscricao AS ENUM ('inscrito', 'confirmado', 'cancelado', 'lista_espera', 'presente', 'ausente');
+
+-- Categorias de configuração
+CREATE TYPE categoria_config AS ENUM (
+  'geral', 'financeiro', 'agendamento', 'comunicacao', 'integracao', 
+  'relatorio', 'seguranca', 'personalização', 'automacao'
+);
+
+-- Tipos de relatório
+CREATE TYPE tipo_relatorio AS ENUM (
+  'operacional', 'financeiro', 'marketing', 'performance', 'administrativo'
+);
+
+-- Níveis de acesso a relatórios
+CREATE TYPE nivel_acesso_relatorio AS ENUM (
+  'publico', 'professor', 'funcionario', 'admin', 'super_admin'
+);
+
+-- Status de módulo
+CREATE TYPE status_modulo AS ENUM ('ativo', 'inativo', 'beta', 'deprecated');
+
+-- Tipos de módulo
+CREATE TYPE tipo_modulo AS ENUM (
+  'core', 'financeiro', 'comunicacao', 'relatorios', 'integracao', 'premium'
+);
+```
+
+---
+
+## SEÇÃO 3: TABELAS DE CONTROLE DE MÓDULOS E PERMISSÕES
+
+```sql
+-- Tabela de módulos do sistema (Controlado pelo Super Admin)
+CREATE TABLE modulos_sistema (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  nome VARCHAR(100) NOT NULL UNIQUE,
+  codigo VARCHAR(50) NOT NULL UNIQUE,
+  tipo tipo_modulo NOT NULL,
+  descricao TEXT NOT NULL,
+  icone VARCHAR(100),
+  ordem INTEGER NOT NULL DEFAULT 0,
+  status status_modulo NOT NULL DEFAULT 'ativo',
+  dependencias JSONB DEFAULT '[]', -- Módulos necessários
+  configuracoes_padrao JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Tabela de módulos liberados por arena
+CREATE TABLE arena_modulos (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arena_id UUID REFERENCES arenas(id) ON DELETE CASCADE,
+  modulo_id UUID REFERENCES modulos_sistema(id) ON DELETE CASCADE,
+  ativo BOOLEAN NOT NULL DEFAULT true,
+  configuracoes JSONB DEFAULT '{}', -- Configurações específicas da arena
+  data_ativacao TIMESTAMPTZ DEFAULT NOW(),
+  data_desativacao TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(arena_id, modulo_id)
+);
+
+-- Tabela de relatórios disponíveis
+CREATE TABLE relatorios_sistema (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  nome VARCHAR(100) NOT NULL,
+  codigo VARCHAR(50) NOT NULL UNIQUE,
+  tipo tipo_relatorio NOT NULL,
+  descricao TEXT,
+  nivel_minimo nivel_acesso_relatorio NOT NULL,
+  modulo_id UUID REFERENCES modulos_sistema(id),
+  query_base TEXT, -- SQL base do relatório
+  parametros JSONB DEFAULT '{}', -- Parâmetros configuráveis
+  ativo BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Tabela de configuração de visibilidade de relatórios por arena
+CREATE TABLE arena_relatorios_config (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arena_id UUID REFERENCES arenas(id) ON DELETE CASCADE,
+  relatorio_id UUID REFERENCES relatorios_sistema(id) ON DELETE CASCADE,
+  nivel_acesso nivel_acesso_relatorio NOT NULL,
+  visivel_para_professores BOOLEAN DEFAULT false,
+  visivel_para_alunos BOOLEAN DEFAULT false,
+  configuracoes JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(arena_id, relatorio_id, nivel_acesso)
+);
+-- Tabela de agendamentos (CRUD Completo)
+CREATE TABLE agendamentos (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arena_id UUID REFERENCES arenas(id) ON DELETE CASCADE,
+  quadra_id UUID REFERENCES quadras(id) ON DELETE CASCADE,
+  
+  -- Responsável pelo agendamento
+  criado_por_id UUID REFERENCES usuarios(id),
+  cliente_principal_id UUID REFERENCES usuarios(id),
+  
+  -- Data e horário
+  data_agendamento DATE NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fim TIME NOT NULL,
+  duracao_minutos INTEGER GENERATED ALWAYS AS (
+    EXTRACT(EPOCH FROM (hora_fim - hora_inicio)) / 60
+  ) STORED,
+  
+  -- Tipo e configurações
+  tipo tipo_agendamento NOT NULL DEFAULT 'avulso',
+  modalidade tipo_esporte NOT NULL,
+  
+  -- Participantes
+  participantes JSONB DEFAULT '[]', -- IDs dos participantes
+  max_participantes INTEGER DEFAULT 4,
+  lista_espera JSONB DEFAULT '[]',
+  
+  -- Valores
+  valor_total DECIMAL(8,2) NOT NULL DEFAULT 0,
+  valor_por_pessoa DECIMAL(8,2),
+  desconto_aplicado DECIMAL(8,2) DEFAULT 0,
+  valor_final DECIMAL(8,2) GENERATED ALWAYS AS (valor_total - COALESCE(desconto_aplicado, 0)) STORED,
+  
+  -- Status e observações
+  status status_agendamento NOT NULL DEFAULT 'pendente',
+  observacoes TEXT,
+  observacoes_internas TEXT,
+  
+  -- Recorrência
+  e_recorrente BOOLEAN DEFAULT false,
+  recorrencia_config JSONB DEFAULT '{}',
+  agendamento_pai_id UUID REFERENCES agendamentos(id),
+  
+  -- Check-ins e controle
+  permite_checkin BOOLEAN DEFAULT true,
+  checkin_aberto_em TIMESTAMPTZ,
+  checkin_fechado_em TIMESTAMPTZ,
+  checkins JSONB DEFAULT '[]',
+  
+  -- Comunicação
+  notificacoes_enviadas JSONB DEFAULT '[]',
+  lembrete_enviado BOOLEAN DEFAULT false,
+  
+  -- Cancelamento
+  data_cancelamento TIMESTAMPTZ,
+  motivo_cancelamento TEXT,
+  cancelado_por_id UUID REFERENCES usuarios(id),
+  
+  -- Metadados
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Constraints
+  CHECK (hora_fim > hora_inicio),
+  CHECK (valor_total >= 0),
+  CHECK (max_participantes > 0)
+);
+
+-- Tabela de aulas (CRUD Completo)
+CREATE TABLE aulas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arena_id UUID REFERENCES arenas(id) ON DELETE CASCADE,
+  agendamento_id UUID REFERENCES agendamentos(id) ON DELETE CASCADE,
+  professor_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+  
+  -- Configurações da aula
+  nome VARCHAR(150),
+  tipo_aula VARCHAR(50) NOT NULL, -- 'individual', 'dupla', 'grupo', 'clinica'
+  modalidade tipo_esporte NOT NULL,
+  nivel_aula nivel_jogo,
+  
+  -- Alunos
+  alunos JSONB DEFAULT '[]', -- Array com IDs dos alunos
+  max_alunos INTEGER DEFAULT 4,
+  min_alunos INTEGER DEFAULT 1,
+  
+  -- Conteúdo programático
+  objetivos TEXT,
+  conteudo_programatico TEXT,
+  material_necessario JSONB DEFAULT '[]',
+  
+  -- Valores e duração
+  valor_aula DECIMAL(8,2) NOT NULL,
+  duracao_minutos INTEGER NOT NULL DEFAULT 60,
+  
+  -- Check-in e presença
+  checkin_habilitado BOOLEAN DEFAULT true,
+  checkin_config JSONB DEFAULT '{}',
+  presencas JSONB DEFAULT '[]',
+  
+  -- Avaliação e feedback
+  avaliacao_professor JSONB DEFAULT '{}',
+  feedback_alunos JSONB DEFAULT '[]',
+  notas_professor TEXT,
+  
+  -- Reposição
+  e_reposicao BOOLEAN DEFAULT false,
+  aula_original_id UUID REFERENCES aulas(id),
+  motivo_reposicao TEXT,
+  
+  -- Status
+  status status_agendamento NOT NULL DEFAULT 'confirmado',
+  realizada BOOLEAN DEFAULT false,
+  data_realizacao TIMESTAMPTZ,
+  
+  -- Metadados
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  CHECK (max_alunos >= min_alunos),
+  CHECK (valor_aula >= 0)
+);
+
+-- Tabela de contratos e mensalidades (CRUD Completo)
+CREATE TABLE contratos (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arena_id UUID REFERENCES arenas(id) ON DELETE CASCADE,
+  cliente_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
+  vendedor_id UUID REFERENCES usuarios(id),
+  
+  -- Dados do contrato
+  numero_contrato VARCHAR(50) NOT NULL,
+  tipo_plano tipo_plano NOT NULL,
+  modalidade tipo_esporte NOT NULL,
+  
+  -- Datas
+  data_inicio DATE NOT NULL,
+  data_fim DATE NOT NULL,
+  data_vencimento_mensalidade INTEGER NOT NULL DEFAULT 10, -- dia do mês
+  
+  -- Valores
+  valor_mensalidade DECIMAL(8,2) NOT NULL,
+  valor_taxa_adesao DECIMAL(8,2) DEFAULT 0,
+  desconto_percentual DECIMAL(5,2) DEFAULT 0,
+  valor_desconto DECIMAL(8,2) DEFAULT 0,
+  valor_final_mensalidade DECIMAL(8,2) GENERATED ALWAYS AS (
+    valor_mensalidade - COALESCE(valor_desconto, 0) - (valor_mensalidade * COALESCE(desconto_percentual, 0) / 100)
+  ) STORED,
+  
+  -- Benefícios inclusos
+  aulas_incluidas INTEGER DEFAULT 0,
+  aulas_utilizadas INTEGER DEFAULT 0,
+  horas_quadra_incluidas INTEGER DEFAULT 0,
+  horas_quadra_utilizadas INTEGER DEFAULT 0,
+  
+  -- Políticas
+  politica_reposicao JSONB DEFAULT '{}',
+  politica_cancelamento JSONB DEFAULT '{}',
+  politica_desconto JSONB DEFAULT '{}',
+  
+  -- Status
+  status status_contrato NOT NULL DEFAULT 'ativo',
+  motivo_cancelamento TEXT,
+  data_cancelamento TIMESTAMPTZ,
+  
+  -- Observações
+  observacoes TEXT,
+  clausulas_especiais TEXT,
+  
+  -- Metadados
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(arena_id, numero_contrato),
+  CHECK (data_fim > data_inicio),
+  CHECK (valor_mensalidade > 0)
+);
+
+-- Tabela de faturas (CRUD Completo)
+CREATE TABLE faturas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arena_id UUID REFERENCES arenas(id) ON DELETE CASCADE,
+  contrato_id UUID REFERENCES contratos(id) ON DELETE CASCADE,
+  cliente_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
+  
+  -- Dados da fatura
+  numero_fatura VARCHAR(50) NOT NULL,
+  competencia DATE NOT NULL, -- mês/ano de referência
+  
+  -- Datas importantes
+  data_vencimento DATE NOT NULL,
+  data_emissao DATE NOT NULL DEFAULT CURRENT_DATE,
+  data_pagamento TIMESTAMPTZ,
+  
+  -- Valores
+  valor_base DECIMAL(8,2) NOT NULL,
+  desconto DECIMAL(8,2) DEFAULT 0,
+  acrescimo DECIMAL(8,2) DEFAULT 0,
+  valor_total DECIMAL(8,2) GENERATED ALWAYS AS (
+    valor_base - COALESCE(desconto, 0) + COALESCE(acrescimo, 0)
+  ) STORED,
+  valor_pago DECIMAL(8,2) DEFAULT 0,
+  
+  -- Status e forma de pagamento
+  status status_fatura NOT NULL DEFAULT 'pendente',
+  forma_pagamento forma_pagamento,
+  
+  -- Integração Asaas
+  asaas_payment_id VARCHAR(100),
+  asaas_invoice_url TEXT,
+  qr_code_pix TEXT,
+  linha_digitavel TEXT,
+  
+  -- Observações
+  observacoes TEXT,
+  observacoes_internas TEXT,
+  
+  -- Histórico de status
+  historico_status JSONB DEFAULT '[]',
+  
+  -- Metadados
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(arena_id, numero_fatura),
+  CHECK (valor_base > 0),
+  CHECK (valor_pago >= 0)
+);
+
+-- Tabela de movimentações financeiras (CRUD Completo)
+CREATE TABLE movimentacoes_financeiras (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arena_id UUID REFERENCES arenas(id) ON DELETE CASCADE,
+  
+  -- Referências
+  fatura_id UUID REFERENCES faturas(id),
+  agendamento_id UUID REFERENCES agendamentos(id),
+  contrato_id UUID REFERENCES contratos(id),
+  usuario_responsavel_id UUID REFERENCES usuarios(id),
+  
+  -- Dados da movimentação
+  tipo tipo_movimentacao NOT NULL,
+  categoria categoria_financeira NOT NULL,
+  subcategoria VARCHAR(100),
+  
+  -- Descrição e valores
+  descricao VARCHAR(200) NOT NULL,
+  observacoes TEXT,
+  valor DECIMAL(10,2) NOT NULL,
+  
+  -- Data e forma de pagamento
+  data_movimentacao DATE NOT NULL DEFAULT CURRENT_DATE,
+  data_competencia DATE NOT NULL DEFAULT CURRENT_DATE,
+  forma_pagamento forma_pagamento,
+  
+  -- Status
+  confirmada BOOLEAN DEFAULT false,
+  data_confirmacao TIMESTAMPTZ,
+  
+  -- Conciliação bancária
+  conciliada BOOLEAN DEFAULT false,
+  data_conciliacao DATE,
+  conta_bancaria VARCHAR(100),
+  
+  -- Metadados
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  CHECK (valor != 0)
+);
+
+-- Tabela de torneios (CRUD Completo)
+CREATE TABLE torneios (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arena_id UUID REFERENCES arenas(id) ON DELETE CASCADE,
+  criado_por_id UUID REFERENCES usuarios(id),
+  
+  -- Dados básicos
+  nome VARCHAR(150) NOT NULL,
+  descricao TEXT,
+  modalidade tipo_esporte NOT NULL,
+  
+  -- Datas importantes
+  data_inicio DATE NOT NULL,
+  data_fim DATE NOT NULL,
+  data_limite_inscricao TIMESTAMPTZ NOT NULL,
+  
+  -- Configurações
+  max_participantes INTEGER,
+  max_duplas INTEGER,
+  formato_chaveamento VARCHAR(50) DEFAULT 'eliminacao_simples',
+  categoria_nivel nivel_jogo,
+  categoria_idade_min INTEGER,
+  categoria_idade_max INTEGER,
+  categoria_genero genero,
+  
+  -- Valores
+  taxa_inscricao DECIMAL(8,2) NOT NULL DEFAULT 0,
+  premiacao_total DECIMAL(8,2) DEFAULT 0,
+  distribuicao_premiacao JSONB DEFAULT '{}',
+  
+  -- Quadras e horários
+  quadras_utilizadas JSONB DEFAULT '[]',
+  cronograma JSONB DEFAULT '{}',
+  
+  -- Status
+  status status_evento NOT NULL DEFAULT 'planejado',
+  
+  -- Regulamento
+  regulamento TEXT,
+  regras_especiais TEXT,
+  material_incluido JSONB DEFAULT '[]',
+  
+  -- Metadados
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  CHECK (data_fim >= data_inicio),
+  CHECK (data_limite_inscricao <= data_inicio),
+  CHECK (taxa_inscricao >= 0)
+);
+
+-- Tabela de inscrições em torneios (CRUD Completo)
+CREATE TABLE inscricoes_torneios (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  torneio_id UUID REFERENCES torneios(id) ON DELETE CASCADE,
+  
+  -- Participantes
+  jogador1_id UUID REFERENCES usuarios(id) NOT NULL,
+  jogador2_id UUID REFERENCES usuarios(id), -- Para duplas
+  
+  -- Dados da inscrição
+  data_inscricao TIMESTAMPTZ DEFAULT NOW(),
+  valor_pago DECIMAL(8,2) DEFAULT 0,
+  forma_pagamento forma_pagamento,
+  
+  -- Status
+  status status_inscricao NOT NULL DEFAULT 'inscrito',
+  posicao_chaveamento INTEGER,
+  
+  -- Documentação
+  documentos_enviados JSONB DEFAULT '[]',
+  documentos_aprovados BOOLEAN DEFAULT false,
+  
+  -- Observações
+  observacoes TEXT,
+  necessidades_especiais TEXT,
+  
+  -- Metadados
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(torneio_id, jogador1_id, jogador2_id)
+);
+```
