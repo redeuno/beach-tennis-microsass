@@ -29,3 +29,19 @@ build/
 # Database
 *.db
 *.sqlite
+
+# Outros projetos (manter apenas beach tennis)
+01-weekly-report-generators/
+02-mappers-and-processors/
+03-analysis-and-debug/
+04-documentation/
+05-optimized-mappers/
+06-optimized-reports/
+07-ai-clustering-analysis/
+08-n8n-weekly-report-optimization/
+09-pinecone-data-processor/
+10-n8n-sql-query-optimization/
+claude-test/
+faq-processors/
+teste-claude-api/
+dados*.md
