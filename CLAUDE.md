@@ -184,9 +184,20 @@ super_admin > arena_admin > funcionario/professor > aluno
 | 2025-09-28 | Projeto criado, documentacao inicial consolidada |
 | 2026-02-14 | Framework de documentacao aplicado (docs/ com 24 arquivos estruturados) |
 | 2026-02-14 | Perfil Arquiteto Fullstack Vibe Coding assumido |
+| 2026-02-15 | Auditoria critica: docs/database/schemas.md tinha ~31 tabelas vs ~60 no Legacy v1.0 |
+| 2026-02-15 | Decisao: Legacy v1.0 como BASE + melhorias seletivas v2.0 |
+| 2026-02-15 | 16 migrations SQL criados em supabase/migrations/ (~60 tabelas, ~50 ENUMs) |
+| 2026-02-15 | RLS granular per role implementado (helper functions + ~100 policies) |
+| 2026-02-15 | Tabelas restauradas: chaveamento, partidas_torneio, resultados_torneio, matriculas_aulas, reposicoes, planos_aula, compras_pacotes, comissoes_professores, detalhes_comissoes, todas comunicacao/integracoes |
+| 2026-02-15 | ENUMs restaurados: status_quadra, tipo_bloqueio, status_bloqueio, tipo_manutencao, status_manutencao, status_aula, status_matricula, motivo_reposicao, status_reposicao, status_torneio, +20 outros |
+| 2026-02-15 | GENERATED columns adicionados: duracao_minutos, valor_final (agendamentos), valor_final_mensalidade (contratos), valor_total (faturas) |
+| 2026-02-15 | Precos definidos: Basico R$39.90, Pro R$89.90, Premium R$159.90 (v1.0) |
+| 2026-02-15 | Guia de execucao para nao-devs criado: supabase/GUIA_EXECUCAO.md |
+| 2026-02-15 | Usuario nao e dev - precisa de orientacoes claras para execucao |
 
 ## Status Atual
 
-- **Fase:** Pre-implementacao (documentacao completa)
-- **Proximo passo:** Implementar MVP seguindo sequencia de prompts (0->10)
+- **Fase:** Banco de dados pronto para execucao (16 migrations SQL)
+- **Proximo passo:** Executar migrations no Supabase + implementar frontend Next.js (Prompt 2)
 - **Branch ativa:** `claude/identify-framework-OpdDy`
+- **Guia de execucao:** `supabase/GUIA_EXECUCAO.md`
