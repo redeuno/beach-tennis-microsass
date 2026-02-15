@@ -7,7 +7,7 @@
 | **Versao** | 1.1 |
 | **Stack** | Next.js 14 + Supabase + React Native |
 | **Tipo** | CRM/ERP Multi-tenant White-label |
-| **Status** | Em documentacao / Pre-implementacao |
+| **Status** | Banco de dados pronto / Pre-implementacao frontend |
 
 ---
 
@@ -27,7 +27,7 @@ Sistema SaaS modular para gestao de arenas de beach tennis, oferecendo diferente
 
 ## Planos e Modulos
 
-| Modulo | Basico (R$89,90) | Pro (R$189,90) | Premium (R$389,90) |
+| Modulo | Basico (R$39,90) | Pro (R$89,90) | Premium (R$159,90) |
 |--------|:-----------------:|:---------------:|:-------------------:|
 | Dashboard | x | x | x |
 | Gestao de Arenas | x | x | x |
@@ -130,6 +130,9 @@ verana-beach-tennis/
 │   ├── ui/                      # Design e wireframes
 │   ├── integrations/            # APIs externas
 │   └── guides/                  # Guias de implementacao
+├── supabase/
+│   ├── migrations/              # 18 arquivos SQL (executar em ordem)
+│   └── GUIA_EXECUCAO.md         # Guia passo-a-passo para executar o banco
 └── 11-beach-tennis-microsass/   # Documentos legados (arquivo)
     ├── current/                 # Versao consolidada legada
     ├── docs-analysis/           # Documentos fonte originais

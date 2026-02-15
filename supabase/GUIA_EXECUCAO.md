@@ -35,7 +35,7 @@ Este guia foi feito para voce que **NAO e desenvolvedor** e precisa executar os 
 
 ### PASSO 3: Executar os arquivos na ORDEM CORRETA
 
-**IMPORTANTE: Voce DEVE executar os arquivos na ordem numerica (001, 002, 003... ate 016). NAO pule nenhum arquivo e NAO mude a ordem.**
+**IMPORTANTE: Voce DEVE executar os arquivos na ordem numerica (001, 002, 003... ate 018). NAO pule nenhum arquivo e NAO mude a ordem.**
 
 Para CADA arquivo, faca:
 
@@ -53,7 +53,7 @@ Para CADA arquivo, faca:
 | # | Arquivo | O que faz |
 |---|---------|-----------|
 | 1 | `001_extensions_and_config.sql` | Configura extensoes e timezone |
-| 2 | `002_enums.sql` | Cria os tipos de dados (~50 tipos) |
+| 2 | `002_enums.sql` | Cria os tipos de dados (65 tipos) |
 | 3 | `003_platform_tables.sql` | Cria tabelas da plataforma (planos, arenas) |
 | 4 | `004_users_tables.sql` | Cria tabelas de usuarios |
 | 5 | `005_courts_tables.sql` | Cria tabelas de quadras |
@@ -68,13 +68,15 @@ Para CADA arquivo, faca:
 | 14 | `014_indexes.sql` | Cria indices para performance |
 | 15 | `015_views.sql` | Cria views para relatorios |
 | 16 | `016_seeds.sql` | Insere dados iniciais |
+| 17 | `017_platform_enhancements.sql` | Multi-arena, trial, metricas, webhooks |
+| 18 | `018_platform_rls_triggers_indexes.sql` | Seguranca e indices para tabelas novas |
 
 ### PASSO 4: Verificar se tudo foi criado corretamente
 
-Apos executar TODOS os 16 arquivos, execute este SQL no editor para verificar:
+Apos executar TODOS os 18 arquivos, execute este SQL no editor para verificar:
 
 ```sql
--- Conta quantas tabelas foram criadas (esperado: ~60+)
+-- Conta quantas tabelas foram criadas (esperado: 71)
 SELECT COUNT(*) as total_tabelas
 FROM information_schema.tables
 WHERE table_schema = 'public'
@@ -87,7 +89,7 @@ WHERE table_schema = 'public'
 AND table_type = 'BASE TABLE'
 ORDER BY table_name;
 
--- Verifica se RLS esta habilitado
+-- Verifica se RLS esta habilitado (todas devem ter rowsecurity = true)
 SELECT tablename, rowsecurity
 FROM pg_tables
 WHERE schemaname = 'public'
@@ -98,6 +100,11 @@ SELECT trigger_name, event_object_table
 FROM information_schema.triggers
 WHERE trigger_schema = 'public'
 ORDER BY event_object_table;
+
+-- Verifica ENUMs criados (esperado: 65)
+SELECT typname FROM pg_type
+WHERE typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+AND typtype = 'e' ORDER BY typname;
 ```
 
 ### PASSO 5: Salvar suas credenciais
@@ -157,9 +164,10 @@ Depois execute todos os arquivos novamente desde o 001.
 
 Apos a execucao, voce tera:
 
-- **~60 tabelas** cobrindo todos os modulos do sistema
-- **~50 tipos ENUM** para padronizacao de dados
+- **71 tabelas** cobrindo todos os modulos do sistema
+- **65 tipos ENUM** para padronizacao de dados
 - **Seguranca RLS** ativa em todas as tabelas (isolamento por arena)
+- **~110 policies** de seguranca granulares por papel
 - **5 views** para relatorios automaticos
 - **Triggers** para auditoria e numeracao automatica de faturas
 - **Dados iniciais**: 3 planos, 11 modulos, 5 relatorios, configuracoes padrao
@@ -168,7 +176,7 @@ Apos a execucao, voce tera:
 
 | Modulo | Tabelas |
 |--------|---------|
-| Plataforma | planos_sistema, modulos_sistema, arenas, arenas_planos, faturas_sistema, arena_modulos, relatorios_sistema, arena_relatorios_config |
+| Plataforma | planos_sistema, modulos_sistema, arenas, arenas_planos, faturas_sistema, arena_modulos, relatorios_sistema, arena_relatorios_config, **usuarios_arenas**, **eventos_assinatura**, **webhook_events**, **uso_plataforma**, **anuncios_plataforma**, **anuncios_lidos**, **metricas_plataforma** |
 | Usuarios | usuarios, professores, funcionarios, permissoes |
 | Quadras | quadras, quadras_bloqueios, manutencoes, equipamentos_quadra |
 | Agendamentos | agendamentos, checkins, lista_espera, agendamentos_recorrentes |
