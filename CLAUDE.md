@@ -157,11 +157,14 @@ super_admin > arena_admin > funcionario/professor > aluno
 
 ## Padroes de Banco de Dados
 
-- Multi-tenant isolado por `arena_id`
-- Row Level Security (RLS) em todas as tabelas principais
-- ENUMs customizados para padronizacao
-- Triggers de auditoria e updated_at automatico
-- Indices otimizados para consultas frequentes
+- Multi-tenant isolado por `arena_id` + RLS
+- Row Level Security (RLS) em TODAS as 71 tabelas (110+ policies)
+- Multi-arena: `usuarios_arenas` junction table para proprietarios com multiplas arenas
+- 65 ENUMs customizados para type safety
+- GENERATED columns para campos computados (duracao, valor_final, etc.)
+- Triggers de auditoria em tabelas criticas (9 tabelas)
+- updated_at automatico em ~50 tabelas
+- Indices otimizados para consultas frequentes (~45 indices)
 
 ## Convencoes de Codigo
 
@@ -194,10 +197,24 @@ super_admin > arena_admin > funcionario/professor > aluno
 | 2026-02-15 | Precos definidos: Basico R$39.90, Pro R$89.90, Premium R$159.90 (v1.0) |
 | 2026-02-15 | Guia de execucao para nao-devs criado: supabase/GUIA_EXECUCAO.md |
 | 2026-02-15 | Usuario nao e dev - precisa de orientacoes claras para execucao |
+| 2026-02-15 | Auditoria tripla executada: SQL errors, business logic gaps, docs accuracy |
+| 2026-02-15 | Fix: GENERATED column duracao_minutos precisava de ::INTEGER cast |
+| 2026-02-15 | Fix: README.md tinha precos errados (v2.0 vs v1.0) — corrigido para R$39.90/89.90/159.90 |
+| 2026-02-15 | Gap critico identificado: sem multi-arena (1 usuario = 1 arena apenas) |
+| 2026-02-15 | Gap critico identificado: sem ciclo de vida SaaS (trial/assinatura/churn) |
+| 2026-02-15 | Gap critico identificado: sem metricas de plataforma (MRR/ARR/churn) |
+| 2026-02-15 | Migration 017 criado: 7 novas tabelas + 6 novos ENUMs + ALTER arenas (multi-arena, trial, metricas, webhooks, anuncios) |
+| 2026-02-15 | Migration 018 criado: RLS + triggers + indexes para tabelas do 017 |
+| 2026-02-15 | Helper functions novas: auth_user_arena_ids(), is_arena_proprietario() |
+| 2026-02-15 | Total final: 71 tabelas, 65 ENUMs, ~110 RLS policies, 5 views |
+| 2026-02-15 | ARCHITECTURE_GUIDE.md criado para o dono entender todo o sistema |
+| 2026-02-15 | Todas docs atualizadas: schemas.md, rls-and-security.md, GUIA_EXECUCAO.md, README.md |
 
 ## Status Atual
 
-- **Fase:** Banco de dados pronto para execucao (16 migrations SQL)
+- **Fase:** Banco de dados completo e pronto para execucao (18 migrations SQL)
 - **Proximo passo:** Executar migrations no Supabase + implementar frontend Next.js (Prompt 2)
 - **Branch ativa:** `claude/identify-framework-OpdDy`
 - **Guia de execucao:** `supabase/GUIA_EXECUCAO.md`
+- **Guia de arquitetura (para o dono):** `docs/database/ARCHITECTURE_GUIDE.md`
+- **Numeros:** 71 tabelas, 65 ENUMs, ~110 RLS policies, 5 views, 18 arquivos SQL

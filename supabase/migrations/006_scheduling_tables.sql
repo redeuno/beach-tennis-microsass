@@ -25,7 +25,7 @@ CREATE TABLE agendamentos (
   hora_inicio TIME NOT NULL,
   hora_fim TIME NOT NULL,
   duracao_minutos INTEGER GENERATED ALWAYS AS (
-    EXTRACT(EPOCH FROM (hora_fim - hora_inicio)) / 60
+    (EXTRACT(EPOCH FROM (hora_fim - hora_inicio)) / 60)::INTEGER
   ) STORED,
 
   -- Tipo e configuracoes
