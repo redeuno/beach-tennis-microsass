@@ -14,6 +14,8 @@
 | Formularios | React Hook Form + Zod | Validacao type-safe, performance |
 | Mobile | React Native + Expo | Cross-platform, compartilha logica com web |
 | Backend | Supabase | PostgreSQL, Auth, Realtime, Storage, Edge Functions |
+| Automacoes | Supabase Edge Functions + pg_cron | Sem dependencia externa (zero n8n) |
+| AI | Claude API (Anthropic) | Chatbot WhatsApp, insights, campanhas |
 | Deploy Web | Vercel | Otimizado para Next.js, edge network |
 | Deploy Mobile | EAS Build | Build nativo na cloud |
 
@@ -24,7 +26,7 @@
 ### Next.js 14 (App Router)
 - Server Components para performance
 - Route Groups: `(auth)`, `(dashboard)`, `(super-admin)`
-- API Routes para webhooks
+- API Routes para webhooks (fallback — Edge Functions sao preferidas)
 - Middleware para autenticacao e redirecionamento
 
 ### Tailwind CSS + Shadcn/UI
@@ -43,7 +45,6 @@
 
 ### Graficos e Calendario
 - **Recharts**: Graficos de receita, ocupacao, performance
-- **Chart.js**: Graficos avancados quando necessario
 - **FullCalendar.js**: Visualizacao de agenda semanal/mensal
 
 ---
@@ -65,30 +66,33 @@
 ## Backend - Detalhamento
 
 ### Supabase (PostgreSQL)
-- **RLS**: Seguranca multi-tenant nativa
+- **RLS**: Seguranca multi-tenant nativa (71 tabelas, ~110 policies)
 - **Realtime**: Subscriptions para atualizacoes em tempo real
 - **Auth**: JWT tokens, magic links, OAuth
 - **Storage**: Upload de fotos, logos, documentos
-- **Edge Functions**: Logica server-side (Deno)
+- **Edge Functions**: 14+ funcoes Deno para logica server-side
+- **pg_cron**: Agendamento de automacoes (substitui n8n)
+- **pg_net**: Chamadas HTTP de dentro do banco
 
 ### Extensoes PostgreSQL
 - `uuid-ossp`: Geracao de UUIDs
 - `pgcrypto`: Criptografia
 - `postgis`: Geolocalizacao (check-in por proximidade)
+- `pg_cron`: Agendamento de tarefas periodicas
+- `pg_net`: Requisicoes HTTP assincronas
 
 ---
 
 ## Integracoes Externas
 
-| Servico | Uso | Protocolo |
-|---------|-----|-----------|
-| **Evolution API** | WhatsApp (mensagens, templates) | REST + Webhook |
-| **Asaas** | Pagamentos (PIX, boleto, cartao) | REST + Webhook |
-| **n8n** | Automacoes (workflows) | Webhook triggers |
-| **Resend** | Email transacional | REST |
-| **Twilio** | SMS | REST |
-| **Sentry** | Monitoramento de erros | SDK |
-| **PostHog** | Analytics de produto | SDK |
+| Servico | Uso | Protocolo | Edge Function |
+|---------|-----|-----------|--------------|
+| **Asaas** | Pagamentos (PIX, boleto, cartao) | REST + Webhook | `asaas-*` |
+| **Evolution API** | WhatsApp (mensagens, templates, chatbot AI) | REST + Webhook | `whatsapp-*` |
+| **Resend** | Email transacional | REST | `email-send` |
+| **Claude API** | AI (chatbot, insights, campanhas) | REST | `whatsapp-webhook`, `cron-ai-insights` |
+| **Sentry** | Monitoramento de erros | SDK | Frontend |
+| **PostHog** | Analytics de produto | SDK | Frontend |
 
 ---
 
@@ -100,17 +104,20 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# Asaas
+# Asaas (pagamentos)
 ASAAS_API_KEY=
 ASAAS_ENVIRONMENT=sandbox
+ASAAS_WEBHOOK_TOKEN=
 
 # WhatsApp (Evolution API)
 EVOLUTION_API_URL=
 EVOLUTION_API_KEY=
-EVOLUTION_INSTANCE_NAME=
 
 # Email
 RESEND_API_KEY=
+
+# AI (Claude)
+ANTHROPIC_API_KEY=
 
 # Monitoramento
 SENTRY_DSN=
@@ -119,4 +126,4 @@ NEXT_PUBLIC_POSTHOG_KEY=
 
 ---
 
-**Proximos:** [Visao Geral](./system-overview.md) | [Schemas SQL](../database/schemas.md)
+**Proximos:** [Visao Geral](./system-overview.md) | [Schemas SQL](../database/schemas.md) | [Edge Functions](../integrations/edge-functions.md)

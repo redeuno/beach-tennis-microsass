@@ -35,7 +35,7 @@ Este guia foi feito para voce que **NAO e desenvolvedor** e precisa executar os 
 
 ### PASSO 3: Executar os arquivos na ORDEM CORRETA
 
-**IMPORTANTE: Voce DEVE executar os arquivos na ordem numerica (001, 002, 003... ate 018). NAO pule nenhum arquivo e NAO mude a ordem.**
+**IMPORTANTE: Voce DEVE executar os arquivos na ordem numerica (001, 002, 003... ate 020). NAO pule nenhum arquivo e NAO mude a ordem.**
 
 Para CADA arquivo, faca:
 
@@ -70,13 +70,15 @@ Para CADA arquivo, faca:
 | 16 | `016_seeds.sql` | Insere dados iniciais |
 | 17 | `017_platform_enhancements.sql` | Multi-arena, trial, metricas, webhooks |
 | 18 | `018_platform_rls_triggers_indexes.sql` | Seguranca e indices para tabelas novas |
+| 19 | `019_edge_functions_support.sql` | Edge Functions, fila de mensagens, chatbot AI, insights |
+| 20 | `020_edge_functions_rls_triggers_indexes.sql` | Seguranca e indices para tabelas de automacao |
 
 ### PASSO 4: Verificar se tudo foi criado corretamente
 
-Apos executar TODOS os 18 arquivos, execute este SQL no editor para verificar:
+Apos executar TODOS os 20 arquivos, execute este SQL no editor para verificar:
 
 ```sql
--- Conta quantas tabelas foram criadas (esperado: 71)
+-- Conta quantas tabelas foram criadas (esperado: 76)
 SELECT COUNT(*) as total_tabelas
 FROM information_schema.tables
 WHERE table_schema = 'public'
@@ -101,7 +103,7 @@ FROM information_schema.triggers
 WHERE trigger_schema = 'public'
 ORDER BY event_object_table;
 
--- Verifica ENUMs criados (esperado: 65)
+-- Verifica ENUMs criados (esperado: 69)
 SELECT typname FROM pg_type
 WHERE typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
 AND typtype = 'e' ORDER BY typname;
@@ -164,13 +166,16 @@ Depois execute todos os arquivos novamente desde o 001.
 
 Apos a execucao, voce tera:
 
-- **71 tabelas** cobrindo todos os modulos do sistema
-- **65 tipos ENUM** para padronizacao de dados
+- **76 tabelas** cobrindo todos os modulos do sistema
+- **69 tipos ENUM** para padronizacao de dados
 - **Seguranca RLS** ativa em todas as tabelas (isolamento por arena)
-- **~110 policies** de seguranca granulares por papel
+- **~120 policies** de seguranca granulares por papel
 - **5 views** para relatorios automaticos
 - **Triggers** para auditoria e numeracao automatica de faturas
-- **Dados iniciais**: 3 planos, 11 modulos, 5 relatorios, configuracoes padrao
+- **Dados iniciais**: 3 planos, 11 modulos, 5 relatorios, 7 cron jobs, configuracoes padrao
+- **Fila de mensagens** para WhatsApp com rate limiting
+- **Tabelas de chatbot AI** para atendimento automatico via WhatsApp
+- **Tabelas de insights** para analises automaticas por arena
 
 ### Tabelas por Modulo:
 
@@ -183,7 +188,7 @@ Apos a execucao, voce tera:
 | Aulas | tipos_aula, aulas, matriculas_aulas, reposicoes, planos_aula, pacotes_aulas, compras_pacotes |
 | Financeiro | planos, contratos, faturas, comissoes_professores, detalhes_comissoes, movimentacoes, formas_pagamento |
 | Torneios | torneios, inscricoes_torneios, chaveamento, partidas_torneio, resultados_torneio, eventos, participantes_eventos |
-| Comunicacao | notificacoes, campanhas, historico_comunicacoes, templates_comunicacao, templates_whatsapp, integracao_whatsapp, integracao_asaas, automacoes_n8n, logs_execucao, configuracoes_backup, configuracoes_push |
+| Comunicacao | notificacoes, campanhas, historico_comunicacoes, templates_comunicacao, templates_whatsapp, integracao_whatsapp, integracao_asaas, automacoes, logs_execucao, configuracoes_backup, configuracoes_push, **fila_mensagens**, **chatbot_conversas**, **chatbot_mensagens**, **insights_arena**, **cron_jobs_config** |
 | Config | configuracoes_arena, politicas_negocio, modulos_arena, sessoes_usuario, historico_atividades, avaliacoes_performance, evolucao_alunos, relatorios_personalizados, configuracoes_visibilidade, logs_sistema, auditoria_dados, configuracoes |
 
 ---

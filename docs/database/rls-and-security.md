@@ -8,9 +8,9 @@
 
 ### Implementacao
 
-Os arquivos `supabase/migrations/012_rls_policies.sql` e `018_platform_rls_triggers_indexes.sql` contem a implementacao completa de RLS com:
+Os arquivos `supabase/migrations/012_rls_policies.sql`, `018_platform_rls_triggers_indexes.sql` e `020_edge_functions_rls_triggers_indexes.sql` contem a implementacao completa de RLS com:
 
-- **RLS habilitado em TODAS as 71 tabelas**
+- **RLS habilitado em TODAS as 76 tabelas**
 - **Helper functions** para evitar subqueries repetidas:
   - `auth_user_arena_id()` - retorna arena_id do usuario autenticado
   - `auth_user_role()` - retorna tipo_usuario do usuario autenticado
@@ -19,7 +19,7 @@ Os arquivos `supabase/migrations/012_rls_policies.sql` e `018_platform_rls_trigg
   - `auth_user_arena_ids()` - **NOVO** - retorna todos os arena_ids do usuario (multi-arena)
   - `is_arena_proprietario(arena_id)` - **NOVO** - verifica se e proprietario de uma arena especifica
 - **Politicas granulares por role** (nao apenas tenant isolation)
-- **~110 policies** cobrindo todos os cenarios de acesso
+- **~120 policies** cobrindo todos os cenarios de acesso
 
 ### Hierarquia de Acesso
 
@@ -63,7 +63,17 @@ Com a tabela `usuarios_arenas`, um usuario pode estar vinculado a multiplas aren
 | **anuncios_lidos** | ALL | ALL (proprios) | ALL (proprios) | ALL (proprios) | ALL (proprios) |
 | **metricas_plataforma** | ALL | - | - | - | - |
 
-*integracoes = integracao_whatsapp, integracao_asaas, automacoes_n8n
+*integracoes = integracao_whatsapp, integracao_asaas, automacoes
+
+### Automacao e AI (019/020) — Novas Tabelas
+
+| Tabela | super_admin | arena_admin | funcionario | professor | aluno |
+|--------|:-----------:|:-----------:|:-----------:|:---------:|:-----:|
+| **fila_mensagens** | ALL | ALL (arena) | SELECT (arena) | - | - |
+| **chatbot_conversas** | ALL | ALL (arena) | SELECT (arena) | - | - |
+| **chatbot_mensagens** | ALL | ALL (arena) | SELECT (arena) | - | - |
+| **insights_arena** | ALL | ALL (arena) | - | - | - |
+| **cron_jobs_config** | ALL | SELECT | - | - | - |
 
 ### Principios de Seguranca
 
@@ -84,7 +94,7 @@ Com a tabela `usuarios_arenas`, um usuario pode estar vinculado a multiplas aren
 
 ### audit_trigger_function()
 - **Tipo**: AFTER INSERT/UPDATE/DELETE (SECURITY DEFINER)
-- **Aplicado em**: usuarios, agendamentos, faturas, quadras, aulas, contratos, torneios, eventos_assinatura, webhook_events
+- **Aplicado em**: usuarios, agendamentos, faturas, quadras, aulas, contratos, torneios, eventos_assinatura, webhook_events, chatbot_conversas
 - **Funcao**: Registra todas as mudancas na tabela `auditoria_dados`
 - **Dados registrados**: tabela, operacao, dados anteriores, dados novos, usuario responsavel, origem
 
@@ -102,7 +112,7 @@ Com a tabela `usuarios_arenas`, um usuario pode estar vinculado a multiplas aren
 
 ## Indices
 
-Os arquivos `014_indexes.sql` e `018_platform_rls_triggers_indexes.sql` criam indices otimizados para:
+Os arquivos `014_indexes.sql`, `018_platform_rls_triggers_indexes.sql` e `020_edge_functions_rls_triggers_indexes.sql` criam indices otimizados para:
 
 - **Tenant isolation**: `arena_id` em todas as tabelas principais
 - **Consultas de agendamento**: Compostos por arena + data + status
@@ -111,6 +121,9 @@ Os arquivos `014_indexes.sql` e `018_platform_rls_triggers_indexes.sql` criam in
 - **Performance**: Indices compostos para queries complexas do dashboard
 - **Multi-arena**: Indices parciais em usuarios_arenas (arena_ativa, is_proprietario)
 - **Plataforma**: Indices em status_assinatura, trial, subdomain, webhooks
+- **Fila de mensagens**: Indice parcial em status=pendente para processamento rapido
+- **Chatbot**: Indices em conversas ativas e escaladas para humano
+- **Insights**: Indice em insights nao lidos por arena
 
 ---
 

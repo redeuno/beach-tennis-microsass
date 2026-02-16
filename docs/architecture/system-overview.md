@@ -13,10 +13,12 @@ Sistema multi-tenant white-label para gestao completa de arenas de beach tennis.
 | Principio | Descricao |
 |-----------|-----------|
 | **Multi-tenant** | Cada arena e um tenant isolado via `arena_id` + RLS |
-| **White-label** | Customizacao visual (logo, cores) por arena |
+| **White-label** | Customizacao visual (logo, cores, dominio) por arena |
 | **Modular** | Funcionalidades ativadas/desativadas por plano |
 | **Database First** | Schemas definidos antes do frontend |
-| **Seguranca por padrao** | RLS em todas as tabelas, auth obrigatorio |
+| **Seguranca por padrao** | RLS em todas as 71 tabelas, auth obrigatorio |
+| **Zero dependencia externa** | Automacoes via Supabase nativo (sem n8n) |
+| **AI-first** | Chatbot, insights e analises integrados desde o inicio |
 
 ## Componentes do Sistema
 
@@ -33,18 +35,19 @@ Sistema multi-tenant white-label para gestao completa de arenas de beach tennis.
 │                 SUPABASE PLATFORM                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
 │  │  Auth         │  │  Realtime    │  │  Edge Funcs  │ │
+│  │  (JWT+OAuth)  │  │  (WebSocket) │  │  (14+ Deno)  │ │
 │  └──────────────┘  └──────────────┘  └──────────────┘ │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │  PostgreSQL   │  │  Storage     │  │  REST API    │ │
-│  │  + RLS        │  │  (arquivos)  │  │  (auto)      │ │
+│  │  PostgreSQL   │  │  Storage     │  │  pg_cron     │ │
+│  │  + RLS (71t)  │  │  (arquivos)  │  │  + pg_net    │ │
 │  └──────────────┘  └──────────────┘  └──────────────┘ │
 └────────────────────────────────────────────────────────┘
           │                  │                  │
 ┌─────────▼──────────────────▼──────────────────▼────────┐
 │              INTEGRACOES EXTERNAS                       │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐ │
-│  │  Asaas   │ │  n8n     │ │  Resend  │ │  Twilio   │ │
-│  │(pagamen.)│ │(automat.)│ │ (email)  │ │  (SMS)    │ │
+│  │  Asaas   │ │  Claude  │ │  Resend  │ │ Evolution │ │
+│  │(pagamen.)│ │  (AI)    │ │ (email)  │ │ (WhatsApp)│ │
 │  └──────────┘ └──────────┘ └──────────┘ └───────────┘ │
 └────────────────────────────────────────────────────────┘
 ```
@@ -63,7 +66,7 @@ src/
 │   │   ├── financeiro/
 │   │   └── layout.tsx
 │   ├── (super-admin)/           # Super Admin
-│   └── api/                     # API routes + webhooks
+│   └── api/                     # API routes (webhooks fallback)
 ├── components/                  # Componentes reutilizaveis
 │   ├── ui/                     # Shadcn components
 │   ├── forms/                  # Formularios especificos
@@ -72,7 +75,7 @@ src/
 ├── lib/                        # Utilitarios
 │   ├── supabase/              # Config Supabase
 │   ├── validations/           # Schemas Zod
-│   ├── services/              # Servicos externos
+│   ├── services/              # Chamadas a Edge Functions
 │   └── hooks/                 # Custom hooks
 └── store/                     # Estado global (Zustand)
 ```
@@ -81,25 +84,11 @@ src/
 
 | Role | Escopo | Permissoes |
 |------|--------|------------|
-| **super_admin** | Plataforma | Controle total de todas as arenas, planos, faturamento |
-| **arena_admin** | Arena | Gestao completa da arena, usuarios, configuracoes |
+| **super_admin** | Plataforma | Controle total: arenas, metricas, MRR, anuncios, planos |
+| **arena_admin** | Arena(s) | Gestao completa, multi-arena com switch de conta |
 | **funcionario** | Arena | Operacoes do dia-a-dia conforme permissoes |
 | **professor** | Arena | Gestao de aulas, alunos, agenda pessoal |
 | **aluno** | Arena | App mobile, agendamentos, historico, pagamentos |
-
-### Sistema de Permissoes
-
-```typescript
-export enum Permission {
-  ARENA_CREATE = 'arena:create',
-  ARENA_READ = 'arena:read',
-  ARENA_UPDATE = 'arena:update',
-  QUADRA_MANAGE = 'quadra:manage',
-  AGENDAMENTO_MANAGE = 'agendamento:manage',
-  FINANCEIRO_READ = 'financeiro:read',
-  RELATORIOS_ACCESS = 'relatorios:access',
-}
-```
 
 ## Multi-tenancy
 
@@ -108,17 +97,7 @@ O isolamento de dados entre arenas e garantido por:
 1. **Coluna `arena_id`** em todas as tabelas de dados
 2. **Row Level Security (RLS)** no PostgreSQL - cada query e filtrada automaticamente
 3. **Supabase Auth** - o token JWT contem o `user_id` que resolve para o `arena_id`
-
-```sql
--- Exemplo: usuario so ve dados da propria arena
-CREATE POLICY "tenant_isolation" ON usuarios
-FOR ALL USING (
-  arena_id IN (
-    SELECT arena_id FROM usuarios
-    WHERE auth_id = auth.uid()
-  )
-);
-```
+4. **Multi-arena** - tabela `usuarios_arenas` permite proprietarios com multiplas arenas
 
 ## Deploy
 
@@ -126,8 +105,9 @@ FOR ALL USING (
 |------------|------------|---------|
 | Frontend Web | Vercel | Push to `main` |
 | Mobile | EAS Build | Manual / CI |
-| Database | Supabase | Migrations |
-| Edge Functions | Supabase | Deploy CLI |
+| Database | Supabase | Migrations SQL |
+| Edge Functions | Supabase | `npx supabase functions deploy` |
+| Cron Jobs | Supabase pg_cron | Via SQL + Edge Functions |
 
 ---
 

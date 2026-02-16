@@ -8,18 +8,18 @@
 
 - **Engine:** PostgreSQL (Supabase)
 - **Isolamento:** Multi-tenant via `arena_id` + RLS
-- **Extensoes:** uuid-ossp, pgcrypto, postgis
+- **Extensoes:** uuid-ossp, pgcrypto, postgis, pg_cron, pg_net
 - **Timezone:** America/Sao_Paulo
-- **Total de tabelas:** 71 (64 base + 7 novas plataforma)
-- **Total de ENUMs:** 65 (59 base + 6 novos plataforma)
+- **Total de tabelas:** 76 (64 base + 7 plataforma + 5 automacao/AI)
+- **Total de ENUMs:** 69 (59 base + 6 plataforma + 4 automacao/AI)
 - **Total de views:** 5
-- **Total de policies RLS:** ~110
+- **Total de policies RLS:** ~120
 
 ---
 
 ## Arquivos SQL Definitivos
 
-Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 18 arquivos sequenciais.
+Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 20 arquivos sequenciais.
 
 **Para executar, siga o guia:** [`supabase/GUIA_EXECUCAO.md`](../../supabase/GUIA_EXECUCAO.md)
 
@@ -43,8 +43,10 @@ Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 1
 | 14 | `014_indexes.sql` | Indices otimizados para consultas frequentes |
 | 15 | `015_views.sql` | vw_ocupacao_quadras, vw_receita_mensal, vw_performance_professores, vw_estatisticas_alunos, vw_dashboard_resumo |
 | 16 | `016_seeds.sql` | Dados iniciais: modulos, planos (R$39.90/89.90/159.90), relatorios, configuracoes padrao |
-| 17 | `017_platform_enhancements.sql` | **NOVO** - Multi-arena, trial/assinatura, webhooks, metricas, anuncios, uso |
-| 18 | `018_platform_rls_triggers_indexes.sql` | **NOVO** - RLS + triggers + indexes para tabelas do 017 |
+| 17 | `017_platform_enhancements.sql` | Multi-arena, trial/assinatura, webhooks, metricas, anuncios, uso |
+| 18 | `018_platform_rls_triggers_indexes.sql` | RLS + triggers + indexes para tabelas do 017 |
+| 19 | `019_edge_functions_support.sql` | **NOVO** - pg_cron, pg_net, rename automacoes, fila_mensagens, chatbot AI, insights |
+| 20 | `020_edge_functions_rls_triggers_indexes.sql` | **NOVO** - RLS + triggers + indexes para tabelas do 019 |
 
 ---
 
@@ -126,7 +128,7 @@ Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 1
 | eventos | Eventos especiais |
 | participantes_eventos | Participantes de eventos |
 
-### Comunicacao (010) — 11 tabelas
+### Comunicacao e Automacao (010 + 019) — 16 tabelas
 | Tabela | Descricao |
 |--------|-----------|
 | notificacoes | Notificacoes para usuarios |
@@ -136,10 +138,15 @@ Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 1
 | templates_whatsapp | Templates de WhatsApp |
 | integracao_whatsapp | Config do Evolution API |
 | integracao_asaas | Config do Asaas |
-| automacoes_n8n | Automacoes configuradas |
-| logs_execucao | Logs de automacoes |
+| automacoes | Automacoes via Edge Functions (renomeada de automacoes_n8n) |
+| logs_execucao | Logs de automacoes (com edge_function e tipo_automacao) |
 | configuracoes_backup | Config de backup |
 | configuracoes_push | Config de push notifications |
+| fila_mensagens | **NOVO** - Fila com rate limiting para WhatsApp/Email/SMS |
+| chatbot_conversas | **NOVO** - Conversas AI ativas por arena |
+| chatbot_mensagens | **NOVO** - Mensagens individuais com intent detection |
+| insights_arena | **NOVO** - Insights de negocio gerados por AI |
+| cron_jobs_config | **NOVO** - Registro de cron jobs planejados |
 
 ### Config e Auditoria (011) — 12 tabelas
 | Tabela | Descricao |
@@ -174,7 +181,8 @@ Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 1
 | Config/Sistema | categoria_config, tipo_campo, ambiente, status_conexao, tipo_trigger, nivel_log, operacao_auditoria, origem_operacao | 8 |
 | Modulos (v2.0) | tipo_relatorio, nivel_acesso_relatorio, status_modulo, tipo_modulo | 4 |
 | **Plataforma (017)** | status_assinatura, tipo_evento_assinatura, tipo_webhook, status_webhook, tipo_anuncio, papel_arena | **6** |
-| **Total** | | **65** |
+| **Automacao/AI (019)** | status_fila, tipo_automacao, status_execucao, canal_chatbot | **4** |
+| **Total** | | **69** |
 
 ---
 
@@ -197,6 +205,11 @@ Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 1
 | Ciclo de vida SaaS | **017 novo** | status_assinatura + eventos_assinatura para controle de trial/churn |
 | Metricas plataforma | **017 novo** | MRR/ARR/churn tracking diario para o dono do SaaS |
 | Webhooks | **017 novo** | Log e reconciliacao de webhooks do Asaas |
+| Edge Functions | **019 novo** | Automacoes 100% via Supabase, eliminando n8n |
+| Fila de mensagens | **019 novo** | Rate limiting para WhatsApp (~30 msg/min) |
+| AI Chatbot | **019 novo** | Claude Haiku para atendimento via WhatsApp |
+| AI Insights | **019 novo** | Claude Sonnet para analise de negocio por arena |
+| Cron Jobs | **019 novo** | Registro e config de 7+ cron jobs planejados |
 
 ### Padrao de Extensao (Extension Tables)
 
@@ -217,7 +230,7 @@ Professores e funcionarios sao **tabelas de extensao** de usuarios:
 ## Validacao Pos-Execucao
 
 ```sql
--- Verificar total de tabelas (esperado: 71)
+-- Verificar total de tabelas (esperado: 76)
 SELECT COUNT(*) FROM information_schema.tables
 WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
 
