@@ -21,13 +21,13 @@ CREATE POLICY "fila_mensagens_super_admin" ON fila_mensagens
 
 CREATE POLICY "fila_mensagens_arena_admin" ON fila_mensagens
   FOR ALL USING (
-    arena_id = auth_user_arena_id()
+    (arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id))
     AND auth_user_role() = 'arena_admin'
   );
 
 CREATE POLICY "fila_mensagens_arena_view" ON fila_mensagens
   FOR SELECT USING (
-    arena_id = auth_user_arena_id()
+    (arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id))
     AND auth_user_role() IN ('arena_admin', 'funcionario')
   );
 
@@ -39,7 +39,7 @@ CREATE POLICY "chatbot_conversas_super_admin" ON chatbot_conversas
 
 CREATE POLICY "chatbot_conversas_arena_admin" ON chatbot_conversas
   FOR ALL USING (
-    arena_id = auth_user_arena_id()
+    (arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id))
     AND auth_user_role() IN ('arena_admin', 'funcionario')
   );
 
@@ -59,7 +59,7 @@ CREATE POLICY "chatbot_mensagens_arena_view" ON chatbot_mensagens
     EXISTS (
       SELECT 1 FROM chatbot_conversas c
       WHERE c.id = chatbot_mensagens.conversa_id
-      AND c.arena_id = auth_user_arena_id()
+      AND (c.arena_id = auth_user_arena_id() OR is_arena_proprietario(c.arena_id))
     )
   );
 
@@ -68,7 +68,7 @@ CREATE POLICY "chatbot_mensagens_arena_manage" ON chatbot_mensagens
     EXISTS (
       SELECT 1 FROM chatbot_conversas c
       WHERE c.id = chatbot_mensagens.conversa_id
-      AND c.arena_id = auth_user_arena_id()
+      AND (c.arena_id = auth_user_arena_id() OR is_arena_proprietario(c.arena_id))
     )
     AND auth_user_role() IN ('arena_admin', 'funcionario')
   );
@@ -81,7 +81,7 @@ CREATE POLICY "insights_arena_super_admin" ON insights_arena
 
 CREATE POLICY "insights_arena_admin" ON insights_arena
   FOR ALL USING (
-    arena_id = auth_user_arena_id()
+    (arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id))
     AND auth_user_role() = 'arena_admin'
   );
 

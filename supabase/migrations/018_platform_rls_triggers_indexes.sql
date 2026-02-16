@@ -48,10 +48,10 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 CREATE POLICY "usuarios_arenas_super_admin" ON usuarios_arenas
   FOR ALL USING (is_super_admin());
 
--- Arena admin gerencia vinculos da propria arena
+-- Arena admin gerencia vinculos da(s) propria(s) arena(s) — suporta multi-arena
 CREATE POLICY "usuarios_arenas_admin_manage" ON usuarios_arenas
   FOR ALL USING (
-    arena_id = auth_user_arena_id()
+    (arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id))
     AND auth_user_role() IN ('arena_admin')
   );
 
@@ -64,7 +64,7 @@ CREATE POLICY "usuarios_arenas_self_view" ON usuarios_arenas
 -- Usuarios da mesma arena podem ver vinculos
 CREATE POLICY "usuarios_arenas_arena_view" ON usuarios_arenas
   FOR SELECT USING (
-    arena_id = auth_user_arena_id()
+    arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id)
   );
 
 
@@ -76,7 +76,7 @@ CREATE POLICY "eventos_assinatura_super_admin" ON eventos_assinatura
 
 CREATE POLICY "eventos_assinatura_arena_admin_view" ON eventos_assinatura
   FOR SELECT USING (
-    arena_id = auth_user_arena_id()
+    (arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id))
     AND auth_user_role() = 'arena_admin'
   );
 
@@ -90,7 +90,7 @@ CREATE POLICY "webhook_events_super_admin" ON webhook_events
 
 CREATE POLICY "webhook_events_arena_admin_view" ON webhook_events
   FOR SELECT USING (
-    arena_id = auth_user_arena_id()
+    (arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id))
     AND auth_user_role() = 'arena_admin'
   );
 
@@ -103,7 +103,7 @@ CREATE POLICY "uso_plataforma_super_admin" ON uso_plataforma
 
 CREATE POLICY "uso_plataforma_arena_admin_view" ON uso_plataforma
   FOR SELECT USING (
-    arena_id = auth_user_arena_id()
+    (arena_id = auth_user_arena_id() OR is_arena_proprietario(arena_id))
     AND auth_user_role() = 'arena_admin'
   );
 

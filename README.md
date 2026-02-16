@@ -70,7 +70,8 @@ Sistema SaaS modular para gestao de arenas de beach tennis, oferecendo diferente
 ### Integracoes Externas
 - **WhatsApp:** Evolution API
 - **Pagamentos:** Asaas
-- **Automacoes:** n8n
+- **Automacoes:** Supabase Edge Functions + pg_cron
+- **AI:** Claude API (chatbot + insights)
 - **Email:** Resend
 - **SMS:** Twilio
 - **Monitoramento:** Sentry + PostHog
@@ -87,7 +88,7 @@ Toda a documentacao do projeto esta organizada na pasta [`docs/`](./docs/README.
 | **Banco de Dados** | Schemas SQL, RLS, triggers e seeds | [`docs/database/`](./docs/database/) |
 | **Modulos** | Documentacao detalhada de cada modulo funcional | [`docs/modules/`](./docs/modules/) |
 | **Interface** | Design system, wireframes e componentes | [`docs/ui/`](./docs/ui/) |
-| **Integracoes** | WhatsApp, Asaas, n8n e webhooks | [`docs/integrations/`](./docs/integrations/) |
+| **Integracoes** | WhatsApp, Asaas, Edge Functions, AI | [`docs/integrations/`](./docs/integrations/) |
 | **Guias** | Setup, implementacao e deploy | [`docs/guides/`](./docs/guides/) |
 
 > **Documentos legados** estao arquivados em [`11-beach-tennis-microsass/`](./11-beach-tennis-microsass/) para referencia historica.
@@ -131,7 +132,7 @@ verana-beach-tennis/
 │   ├── integrations/            # APIs externas
 │   └── guides/                  # Guias de implementacao
 ├── supabase/
-│   ├── migrations/              # 18 arquivos SQL (executar em ordem)
+│   ├── migrations/              # 20 arquivos SQL (executar em ordem)
 │   └── GUIA_EXECUCAO.md         # Guia passo-a-passo para executar o banco
 └── 11-beach-tennis-microsass/   # Documentos legados (arquivo)
     ├── current/                 # Versao consolidada legada
