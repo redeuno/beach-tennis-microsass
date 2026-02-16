@@ -138,12 +138,12 @@ Cada transicao e registrada em `eventos_assinatura` para voce ter historico comp
 
 | Item | Quantidade |
 |------|-----------|
-| Tabelas | 71 |
-| Tipos ENUM | 65 |
+| Tabelas | 76 |
+| Tipos ENUM | 69 |
 | Views (relatorios) | 5 |
-| Policies RLS (seguranca) | ~110 |
-| Triggers automaticos | ~55 |
-| Indices de performance | ~45 |
+| Policies RLS (seguranca) | ~120 |
+| Triggers automaticos | ~58 |
+| Indices de performance | ~50 |
 
 ### Tabelas por Area:
 
@@ -156,7 +156,7 @@ Cada transicao e registrada em `eventos_assinatura` para voce ter historico comp
 | Aulas | 7 | Tipos, aulas, matriculas, reposicoes, pacotes |
 | Financeiro | 7 | Planos, contratos, faturas, comissoes, fluxo de caixa |
 | Torneios | 7 | Torneios, inscricoes, chaveamento, partidas, resultados, eventos |
-| Comunicacao | 11 | Notificacoes, campanhas, templates, WhatsApp, Asaas, n8n |
+| Comunicacao | 16 | Notificacoes, campanhas, templates, WhatsApp, Asaas, automacoes, fila, chatbot, insights |
 | Config/Auditoria | 12 | Configuracoes, logs, auditoria, sessoes, historico |
 
 ---
@@ -188,15 +188,45 @@ Todas as mudancas em tabelas criticas (usuarios, agendamentos, faturas, quadras,
 
 ---
 
-## 8. Integracoes Externas
+## 8. Integracoes Externas e Automacoes
 
 | Servico | Para Que | Tabela de Config |
 |---------|---------|-----------------|
 | **Asaas** | Pagamentos (PIX, boleto, cartao) | `integracao_asaas` |
-| **Evolution API** | WhatsApp (envio automatico) | `integracao_whatsapp` |
-| **n8n** | Automacoes (lembretes, cobranhas, etc.) | `automacoes_n8n` |
+| **Evolution API** | WhatsApp (envio automatico + chatbot AI) | `integracao_whatsapp` |
+| **Claude AI** | Chatbot WhatsApp + insights de negocio | `chatbot_conversas`, `insights_arena` |
 | **Resend** | Email transacional | via Edge Functions |
 | **Supabase Auth** | Login e autenticacao | nativo Supabase |
+
+### Como as Automacoes Funcionam (Sem n8n!)
+
+Todas as automacoes sao feitas DENTRO do Supabase, usando:
+
+1. **Edge Functions** — pequenos programas que rodam no servidor (14+ funcoes)
+2. **pg_cron** — agendador de tarefas (como um despertador para o banco de dados)
+3. **pg_net** — permite o banco de dados fazer chamadas HTTP
+
+**Exemplos praticos:**
+- Aluno agenda uma aula → banco de dados detecta → Edge Function envia WhatsApp de confirmacao
+- Todo dia as 06:00 → pg_cron roda → Edge Function verifica faturas vencendo → envia lembretes
+- Aluno envia mensagem pelo WhatsApp → Edge Function recebe → AI (Claude) responde automaticamente
+
+### Fila de Mensagens (Rate Limit):
+
+WhatsApp tem limite de ~30 mensagens por minuto. O sistema resolve isso com uma **fila inteligente**:
+1. Toda mensagem que precisa ser enviada vai para `fila_mensagens`
+2. A cada 1 minuto, um cron job processa no maximo 30 mensagens
+3. Se der erro, tenta novamente (max 3 tentativas)
+4. Tudo fica registrado em `historico_comunicacoes`
+
+### AI Chatbot (WhatsApp):
+
+O sistema tem um chatbot inteligente que atende seus alunos via WhatsApp:
+- Aluno pergunta sobre horarios → AI busca e responde
+- Aluno quer agendar → AI oferece opcoes disponiveis
+- Aluno quer cancelar → AI processa o cancelamento
+- Pergunta complexa → AI escala para atendente humano
+- Custo estimado: ~R$0,005 por mensagem (muito barato!)
 
 ### Webhooks (Asaas -> Seu Sistema):
 
@@ -261,7 +291,9 @@ supabase/migrations/
 ├── 015_views.sql                    # Relatorios prontos
 ├── 016_seeds.sql                    # Dados iniciais (planos, modulos)
 ├── 017_platform_enhancements.sql    # Multi-arena, trial, metricas
-└── 018_platform_rls_triggers_indexes.sql  # Seguranca das tabelas novas
+├── 018_platform_rls_triggers_indexes.sql  # Seguranca das tabelas novas
+├── 019_edge_functions_support.sql   # Edge Functions, fila, chatbot AI, insights
+└── 020_edge_functions_rls_triggers_indexes.sql  # Seguranca das tabelas de automacao
 ```
 
 ---
@@ -274,8 +306,9 @@ O banco de dados esta **pronto para execucao**. O proximo passo e:
 2. **Criar o projeto Next.js** (frontend web)
 3. **Conectar ao Supabase** (URL + chaves)
 4. **Implementar as telas** (dashboard, login, agendamentos, etc.)
-5. **Configurar integracoes** (Asaas, WhatsApp, n8n)
-6. **Deploy na Vercel** (publicar o site)
+5. **Deploy das Edge Functions** (14+ funcoes de automacao)
+6. **Configurar integracoes** (Asaas, WhatsApp, Claude AI)
+7. **Deploy na Vercel** (publicar o site)
 
 ---
 
@@ -296,6 +329,11 @@ O banco de dados esta **pronto para execucao**. O proximo passo e:
 | **Trial** | Periodo de teste gratuito |
 | **Webhook** | Notificacao automatica entre sistemas |
 | **Junction table** | Tabela que conecta duas outras tabelas (ex: usuario <-> arena) |
+| **Edge Function** | Funcao que roda no servidor do Supabase (substitui o n8n) |
+| **pg_cron** | Agendador de tarefas do PostgreSQL (roda coisas em horarios fixos) |
+| **pg_net** | Extensao que permite o banco fazer chamadas HTTP |
+| **Chatbot AI** | Robo inteligente que conversa com alunos via WhatsApp |
+| **Claude** | Inteligencia artificial da Anthropic usada no chatbot e insights |
 
 ---
 
