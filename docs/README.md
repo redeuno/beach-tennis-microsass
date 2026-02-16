@@ -41,7 +41,9 @@ Documentacao das APIs e servicos externos.
 
 - [WhatsApp - Evolution API](./integrations/whatsapp.md) - Mensagens, templates, automacoes
 - [Asaas - Pagamentos](./integrations/asaas.md) - Cobrancas, faturas, PIX
-- [Automacoes - n8n](./integrations/automations.md) - Workflows automatizados
+- [Automacoes - Edge Functions](./integrations/automations.md) - Workflows automatizados
+- [Edge Functions](./integrations/edge-functions.md) - Spec tecnica das 14+ funcoes
+- [AI Integration](./integrations/ai-integration.md) - Chatbot WhatsApp + Insights
 
 ### [Guias](./guides/)
 Guias praticos para implementacao e operacao.
