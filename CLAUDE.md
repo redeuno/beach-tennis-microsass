@@ -229,6 +229,16 @@ super_admin > arena_admin > funcionario/professor > aluno
 | 2026-02-17 | Migration 021: 3 storage buckets (arenas publico, avatars privado, documentos privado) + RLS |
 | 2026-02-17 | Plano de implementacao criado: 10 etapas com checkpoints (PLANO_IMPLEMENTACAO.md) |
 | 2026-02-17 | Total final: 76 tabelas, 69 ENUMs, ~130 RLS policies, 5 views, 21 arquivos SQL |
+| 2026-02-17 | Auditoria profunda cross-reference: 7 bugs criticos encontrados e corrigidos na migration 021 |
+| 2026-02-17 | Fix: templates_whatsapp usava nomes errados (nome→nome_template, categoria→tipo_template, conteudo→mensagem) |
+| 2026-02-17 | Fix: coluna gatilho (NOT NULL) faltava nos INSERTs de templates_whatsapp |
+| 2026-02-17 | Fix: plano_atual_id→plano_sistema_id em register_arena() |
+| 2026-02-17 | Fix: ENUM tipo_template expandido (+cobranca, +onboarding, +relacionamento) |
+| 2026-02-17 | Fix: FK violation — templates base usam NULL arena_id (nao UUID zero) |
+| 2026-02-17 | Fix: 9 colunas da arenas tornadas nullable para fluxo de onboarding progressivo |
+| 2026-02-17 | Fix: register_arena() agora faz link explicito em usuarios_arenas (nao depende de trigger) |
+| 2026-02-17 | Fix: auto_link_arena_proprietario com ON CONFLICT DO NOTHING (idempotente) |
+| 2026-02-17 | Licao: SEMPRE fazer cross-reference de nomes de colunas/ENUMs entre migrations |
 
 ## Status Atual
 

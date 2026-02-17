@@ -3,9 +3,50 @@
 -- Verana Beach Tennis - MicroSaaS Multi-tenant
 -- FIXES: Auth lifecycle, arena-proprietario link, storage buckets,
 --        default WhatsApp templates, default payment forms
+-- SCHEMA FIXES: Add slug columns to planos_sistema and arenas
 -- ============================================================================
 -- //AI-GENERATED
 -- //HIGH-RISK - auth lifecycle e dados financeiros
+
+-- ============================================================
+-- 0. SCHEMA FIXES: Colunas faltantes para funcionalidade completa
+-- ============================================================
+
+-- planos_sistema precisa de slug para lookup no signup
+ALTER TABLE planos_sistema ADD COLUMN IF NOT EXISTS slug VARCHAR(50);
+UPDATE planos_sistema SET slug = lower(regexp_replace(nome, '[^a-zA-Z0-9]', '-', 'g')) WHERE slug IS NULL;
+ALTER TABLE planos_sistema ADD CONSTRAINT planos_sistema_slug_unique UNIQUE (slug);
+
+-- arenas precisa de slug para subdomain/URL amigavel
+ALTER TABLE arenas ADD COLUMN IF NOT EXISTS slug VARCHAR(100);
+ALTER TABLE arenas ADD CONSTRAINT arenas_slug_unique UNIQUE (slug);
+
+-- ============================================================
+-- 0b. ENUM FIX: tipo_template precisa de valores extras para seeds
+-- Original (002): confirmacao, lembrete, cancelamento, promocao
+-- Novos: cobranca, onboarding, relacionamento
+-- ============================================================
+ALTER TYPE tipo_template ADD VALUE IF NOT EXISTS 'cobranca';
+ALTER TYPE tipo_template ADD VALUE IF NOT EXISTS 'onboarding';
+ALTER TYPE tipo_template ADD VALUE IF NOT EXISTS 'relacionamento';
+
+-- ============================================================
+-- 0c. SCHEMA FIX: Colunas da arenas precisam ser nullable para onboarding
+-- No signup, usuario cria arena com dados minimos (nome + email).
+-- Detalhes como CNPJ, endereco, horario sao preenchidos nos passos
+-- seguintes do onboarding (onboarding_step 1..N).
+-- ============================================================
+ALTER TABLE arenas ALTER COLUMN tenant_id DROP NOT NULL;
+ALTER TABLE arenas ALTER COLUMN tenant_id SET DEFAULT uuid_generate_v4();
+ALTER TABLE arenas ALTER COLUMN razao_social DROP NOT NULL;
+ALTER TABLE arenas ALTER COLUMN cnpj DROP NOT NULL;
+ALTER TABLE arenas ALTER COLUMN telefone DROP NOT NULL;
+ALTER TABLE arenas ALTER COLUMN whatsapp DROP NOT NULL;
+ALTER TABLE arenas ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE arenas ALTER COLUMN endereco_completo DROP NOT NULL;
+ALTER TABLE arenas ALTER COLUMN horario_funcionamento DROP NOT NULL;
+ALTER TABLE arenas ALTER COLUMN data_vencimento DROP NOT NULL;
+
 
 -- ============================================================
 -- 1. TRIGGER: Sincronizar auth.users → public.usuarios
@@ -78,7 +119,8 @@ BEGIN
       true,
       'ativo',
       CURRENT_DATE
-    );
+    )
+    ON CONFLICT (usuario_id, arena_id) DO NOTHING;
 
     -- Atualiza arena_id principal do usuario se nao tiver
     UPDATE public.usuarios
@@ -122,88 +164,97 @@ CREATE TRIGGER auto_create_payment_forms_trigger
 -- ============================================================
 -- 4. SEED: Templates padrao de WhatsApp
 -- Templates com variaveis {{nome}}, {{data}}, {{horario}}, etc.
--- Usando arena_id UUID zero como template base (copiado para novas arenas)
+-- Usando arena_id NULL como template base (copiado para novas arenas)
 -- ============================================================
 INSERT INTO templates_whatsapp (
-  arena_id, nome, categoria, conteudo, variaveis, ativo
+  arena_id, nome_template, tipo_template, gatilho, mensagem, variaveis, ativo
 ) VALUES
 -- Confirmacao de agendamento
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'confirmacao_agendamento',
   'confirmacao',
+  'agendamento_confirmado',
   'Ola {{nome}}! Seu agendamento foi confirmado.\n\nQuadra: {{quadra}}\nData: {{data}}\nHorario: {{horario_inicio}} - {{horario_fim}}\nValor: R$ {{valor}}\n\nAte la! 🎾',
   '["nome", "quadra", "data", "horario_inicio", "horario_fim", "valor"]',
   true
 ),
 -- Lembrete 24h antes
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'lembrete_24h',
   'lembrete',
+  'lembrete_24h_antes',
   'Ola {{nome}}! Lembrete: voce tem um horario amanha.\n\nQuadra: {{quadra}}\nHorario: {{horario_inicio}} - {{horario_fim}}\n\nNao esqueca! 🏖️',
   '["nome", "quadra", "horario_inicio", "horario_fim"]',
   true
 ),
 -- Lembrete 2h antes
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'lembrete_2h',
   'lembrete',
+  'lembrete_2h_antes',
   'Ola {{nome}}! Seu horario e daqui a 2 horas.\n\nQuadra: {{quadra}}\nHorario: {{horario_inicio}}\n\nNos vemos la! 🎾',
   '["nome", "quadra", "horario_inicio"]',
   true
 ),
 -- Fatura vencendo
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'fatura_vencendo',
   'cobranca',
+  'fatura_proximo_vencimento',
   'Ola {{nome}}! Sua fatura vence em {{dias_vencimento}} dia(s).\n\nValor: R$ {{valor}}\nVencimento: {{data_vencimento}}\n\nPague via PIX: {{link_pagamento}}',
   '["nome", "dias_vencimento", "valor", "data_vencimento", "link_pagamento"]',
   true
 ),
 -- Fatura vencida
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'fatura_vencida',
   'cobranca',
+  'fatura_vencida',
   'Ola {{nome}}! Sua fatura esta vencida.\n\nValor: R$ {{valor}}\nVencimento: {{data_vencimento}}\n\nRegularize para continuar usando os servicos: {{link_pagamento}}',
   '["nome", "valor", "data_vencimento", "link_pagamento"]',
   true
 ),
 -- Pagamento confirmado
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'pagamento_confirmado',
   'confirmacao',
+  'pagamento_recebido',
   'Ola {{nome}}! Pagamento recebido com sucesso!\n\nValor: R$ {{valor}}\nReferente a: {{descricao}}\n\nObrigado! ✅',
   '["nome", "valor", "descricao"]',
   true
 ),
 -- Cancelamento de agendamento
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'cancelamento_agendamento',
   'cancelamento',
+  'agendamento_cancelado',
   'Ola {{nome}}! Seu agendamento foi cancelado.\n\nQuadra: {{quadra}}\nData: {{data}}\nHorario: {{horario_inicio}} - {{horario_fim}}\n\nMotivo: {{motivo}}',
   '["nome", "quadra", "data", "horario_inicio", "horario_fim", "motivo"]',
   true
 ),
 -- Aniversario
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'aniversario',
   'relacionamento',
+  'aniversario_usuario',
   'Feliz aniversario, {{nome}}! 🎂🎾\n\n{{arena_nome}} deseja um dia incrivel pra voce!\n\nQue tal comemorar com uma partida?',
   '["nome", "arena_nome"]',
   true
 ),
 -- Boas vindas
 (
-  '00000000-0000-0000-0000-000000000000',
+  NULL,
   'boas_vindas',
   'onboarding',
+  'usuario_cadastrado',
   'Bem-vindo(a) a {{arena_nome}}, {{nome}}! 🎾\n\nSeu cadastro foi realizado com sucesso.\n\nVoce pode agendar horarios, ver suas aulas e muito mais pelo nosso sistema.\n\nQualquer duvida, estamos aqui!',
   '["nome", "arena_nome"]',
   true
@@ -212,21 +263,22 @@ INSERT INTO templates_whatsapp (
 
 -- ============================================================
 -- 5. TRIGGER: Copiar templates WhatsApp padrao para nova arena
--- Copia os templates do UUID zero para cada arena nova
+-- Copia os templates base (arena_id IS NULL) para cada arena nova
 -- ============================================================
 CREATE OR REPLACE FUNCTION auto_copy_whatsapp_templates()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO templates_whatsapp (arena_id, nome, categoria, conteudo, variaveis, ativo)
+  INSERT INTO templates_whatsapp (arena_id, nome_template, tipo_template, gatilho, mensagem, variaveis, ativo)
   SELECT
     NEW.id,
-    nome,
-    categoria,
-    conteudo,
+    nome_template,
+    tipo_template,
+    gatilho,
+    mensagem,
     variaveis,
     ativo
   FROM templates_whatsapp
-  WHERE arena_id = '00000000-0000-0000-0000-000000000000';
+  WHERE arena_id IS NULL;
 
   RETURN NEW;
 END;
@@ -395,18 +447,21 @@ BEGIN
   END IF;
 
   -- 3. Criar arena com trial
+  -- Nota: colunas como cnpj, razao_social, endereco sao nullable (preenchidas no onboarding)
   INSERT INTO arenas (
-    nome, slug, status, plano_atual_id,
+    nome, slug, email, status, plano_sistema_id,
     is_trial, trial_dias, trial_iniciado_em,
-    status_assinatura, onboarding_step
+    data_vencimento, status_assinatura, onboarding_step
   ) VALUES (
     p_arena_nome,
     COALESCE(p_arena_slug, lower(regexp_replace(p_arena_nome, '[^a-zA-Z0-9]', '-', 'g'))),
+    p_email,
     'ativo',
     v_plano,
     true,
     14,
     NOW(),
+    (CURRENT_DATE + INTERVAL '14 days')::DATE,
     'trial',
     1
   ) RETURNING id INTO v_arena_id;
@@ -414,11 +469,18 @@ BEGIN
   -- 4. Atualizar usuario com arena_id
   UPDATE usuarios SET arena_id = v_arena_id WHERE id = v_usuario_id;
 
+  -- 5. Link explicito usuario-arena como proprietario
+  -- (trigger auto_link_arena_proprietario pode nao encontrar o user em contexto Edge Function)
+  INSERT INTO usuarios_arenas (
+    usuario_id, arena_id, papel, is_proprietario, arena_ativa, status, data_vinculo
+  ) VALUES (
+    v_usuario_id, v_arena_id, 'proprietario', true, true, 'ativo', CURRENT_DATE
+  ) ON CONFLICT (usuario_id, arena_id) DO NOTHING;
+
   -- Triggers automaticos fazem o resto:
-  -- - auto_link_arena_proprietario: cria vinculo em usuarios_arenas
-  -- - apply_default_configurations: copia configs padrao
-  -- - auto_create_payment_forms: cria PIX, Boleto, CC
+  -- - auto_create_payment_forms: cria PIX, Boleto, CC, Debito, Dinheiro
   -- - auto_copy_whatsapp_templates: copia templates WhatsApp
+  -- - apply_default_configurations: copia configs padrao (trigger do 016)
 
   RETURN jsonb_build_object(
     'usuario_id', v_usuario_id,
