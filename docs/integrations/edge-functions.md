@@ -44,7 +44,7 @@ supabase/
 │   ├── on-agendamento/index.ts
 │   └── on-arena-created/index.ts
 │
-└── migrations/                     # 20 SQL migrations
+└── migrations/                     # 21 SQL migrations
 ```
 
 ## Especificacao por Edge Function

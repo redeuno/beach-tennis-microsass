@@ -8,7 +8,7 @@
 
 ### Implementacao
 
-Os arquivos `supabase/migrations/012_rls_policies.sql`, `018_platform_rls_triggers_indexes.sql` e `020_edge_functions_rls_triggers_indexes.sql` contem a implementacao completa de RLS com:
+Os arquivos `supabase/migrations/012_rls_policies.sql`, `018_platform_rls_triggers_indexes.sql`, `020_edge_functions_rls_triggers_indexes.sql` e `021_infrastructure_auth_storage_seeds.sql` contem a implementacao completa de RLS com:
 
 - **RLS habilitado em TODAS as 76 tabelas**
 - **Helper functions** para evitar subqueries repetidas:
@@ -19,7 +19,7 @@ Os arquivos `supabase/migrations/012_rls_policies.sql`, `018_platform_rls_trigge
   - `auth_user_arena_ids()` - **NOVO** - retorna todos os arena_ids do usuario (multi-arena)
   - `is_arena_proprietario(arena_id)` - **NOVO** - verifica se e proprietario de uma arena especifica
 - **Politicas granulares por role** (nao apenas tenant isolation)
-- **~120 policies** cobrindo todos os cenarios de acesso
+- **~130 policies** cobrindo todos os cenarios de acesso (incluindo storage buckets)
 
 ### Hierarquia de Acesso
 
@@ -75,6 +75,14 @@ Com a tabela `usuarios_arenas`, um usuario pode estar vinculado a multiplas aren
 | **insights_arena** | ALL | ALL (arena) | - | - | - |
 | **cron_jobs_config** | ALL | SELECT | - | - | - |
 
+### Storage Buckets (021) — RLS em storage.objects
+
+| Bucket | Leitura | Escrita | Atualizacao | Exclusao |
+|--------|---------|---------|-------------|----------|
+| **arenas** (publico) | Todos | super_admin + arena_admin | super_admin + arena_admin | super_admin + arena_admin |
+| **avatars** (privado) | Autenticados | Autenticados | Autenticados | Autenticados |
+| **documentos** (privado) | super_admin + arena_admin + funcionario | super_admin + arena_admin + funcionario | - | super_admin + arena_admin |
+
 ### Principios de Seguranca
 
 1. **Tenant Isolation**: Usuarios so acessam dados da propria arena via `arena_id`
@@ -107,6 +115,32 @@ Com a tabela `usuarios_arenas`, um usuario pode estar vinculado a multiplas aren
 - **Tipo**: AFTER INSERT
 - **Aplicado em**: arenas
 - **Funcao**: Copia configuracoes padrao (template UUID zero) para cada nova arena criada
+
+### handle_new_user() — **021 NOVO**
+- **Tipo**: AFTER INSERT (SECURITY DEFINER)
+- **Aplicado em**: auth.users
+- **Funcao**: Sincroniza auth.users → public.usuarios automaticamente no signup
+
+### auto_link_arena_proprietario() — **021 NOVO**
+- **Tipo**: AFTER INSERT (SECURITY DEFINER)
+- **Aplicado em**: arenas
+- **Funcao**: Vincula automaticamente o criador da arena como proprietario em usuarios_arenas
+
+### auto_create_payment_forms() — **021 NOVO**
+- **Tipo**: AFTER INSERT (SECURITY DEFINER)
+- **Aplicado em**: arenas
+- **Funcao**: Cria 5 formas de pagamento padrao (PIX, Boleto, CC, Debito, Dinheiro)
+
+### auto_copy_whatsapp_templates() — **021 NOVO**
+- **Tipo**: AFTER INSERT (SECURITY DEFINER)
+- **Aplicado em**: arenas
+- **Funcao**: Copia 9 templates WhatsApp base (arena_id IS NULL) para cada nova arena
+
+### register_arena() — **021 NOVO**
+- **Tipo**: Funcao RPC (SECURITY DEFINER)
+- **Parametros**: auth_id, nome_completo, email, telefone, arena_nome, arena_slug, plano_id
+- **Funcao**: Registro completo de arena em uma unica transacao (usuario + arena + vinculos)
+- **Retorno**: JSONB com usuario_id, arena_id, plano_id, is_trial, trial_dias
 
 ---
 

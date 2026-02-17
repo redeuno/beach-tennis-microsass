@@ -13,13 +13,13 @@
 - **Total de tabelas:** 76 (64 base + 7 plataforma + 5 automacao/AI)
 - **Total de ENUMs:** 69 (59 base + 6 plataforma + 4 automacao/AI)
 - **Total de views:** 5
-- **Total de policies RLS:** ~120
+- **Total de policies RLS:** ~130
 
 ---
 
 ## Arquivos SQL Definitivos
 
-Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 20 arquivos sequenciais.
+Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 21 arquivos sequenciais.
 
 **Para executar, siga o guia:** [`supabase/GUIA_EXECUCAO.md`](../../supabase/GUIA_EXECUCAO.md)
 
@@ -47,6 +47,7 @@ Os schemas SQL executaveis estao em **`supabase/migrations/`**, organizados em 2
 | 18 | `018_platform_rls_triggers_indexes.sql` | RLS + triggers + indexes para tabelas do 017 |
 | 19 | `019_edge_functions_support.sql` | **NOVO** - pg_cron, pg_net, rename automacoes, fila_mensagens, chatbot AI, insights |
 | 20 | `020_edge_functions_rls_triggers_indexes.sql` | **NOVO** - RLS + triggers + indexes para tabelas do 019 |
+| 21 | `021_infrastructure_auth_storage_seeds.sql` | **NOVO** - Auth triggers, storage buckets, WhatsApp templates, formas pagamento, register_arena() |
 
 ---
 

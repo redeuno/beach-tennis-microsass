@@ -66,7 +66,7 @@
 ## Backend - Detalhamento
 
 ### Supabase (PostgreSQL)
-- **RLS**: Seguranca multi-tenant nativa (71 tabelas, ~110 policies)
+- **RLS**: Seguranca multi-tenant nativa (76 tabelas, ~130 policies)
 - **Realtime**: Subscriptions para atualizacoes em tempo real
 - **Auth**: JWT tokens, magic links, OAuth
 - **Storage**: Upload de fotos, logos, documentos

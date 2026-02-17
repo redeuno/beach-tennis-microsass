@@ -50,6 +50,7 @@ Guias praticos para implementacao e operacao.
 
 - [Getting Started](./guides/getting-started.md) - Setup do ambiente
 - [Sequencia de Implementacao](./guides/implementation-sequence.md) - Ordem de desenvolvimento
+- [Plano de Implementacao](./guides/PLANO_IMPLEMENTACAO.md) - 10 etapas passo a passo (para nao-devs)
 - [Deploy](./guides/deployment.md) - Publicacao em producao
 
 ---
@@ -69,4 +70,4 @@ Os documentos originais consolidados estao arquivados em [`../11-beach-tennis-mi
 
 ---
 
-*Ultima atualizacao: 14/02/2026*
+*Ultima atualizacao: 17/02/2026*
