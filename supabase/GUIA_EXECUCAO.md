@@ -170,10 +170,11 @@ Apos a execucao, voce tera:
 - **76 tabelas** cobrindo todos os modulos do sistema
 - **69 tipos ENUM** para padronizacao de dados
 - **Seguranca RLS** ativa em todas as tabelas (isolamento por arena)
-- **~120 policies** de seguranca granulares por papel
+- **~130 policies** de seguranca granulares por papel (incluindo storage)
 - **5 views** para relatorios automaticos
-- **Triggers** para auditoria e numeracao automatica de faturas
-- **Dados iniciais**: 3 planos, 11 modulos, 5 relatorios, 7 cron jobs, configuracoes padrao
+- **Triggers** para auditoria, numeracao de faturas, login automatico, criacao de arena
+- **Dados iniciais**: 3 planos, 11 modulos, 5 relatorios, 7 cron jobs, 9 templates WhatsApp, 5 formas pagamento, configuracoes padrao
+- **3 storage buckets** para upload de arquivos (logos, avatars, documentos)
 - **Fila de mensagens** para WhatsApp com rate limiting
 - **Tabelas de chatbot AI** para atendimento automatico via WhatsApp
 - **Tabelas de insights** para analises automaticas por arena

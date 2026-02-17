@@ -16,7 +16,7 @@ Sistema multi-tenant white-label para gestao completa de arenas de beach tennis.
 | **White-label** | Customizacao visual (logo, cores, dominio) por arena |
 | **Modular** | Funcionalidades ativadas/desativadas por plano |
 | **Database First** | Schemas definidos antes do frontend |
-| **Seguranca por padrao** | RLS em todas as 71 tabelas, auth obrigatorio |
+| **Seguranca por padrao** | RLS em todas as 76 tabelas, auth obrigatorio |
 | **Zero dependencia externa** | Automacoes via Supabase nativo (sem n8n) |
 | **AI-first** | Chatbot, insights e analises integrados desde o inicio |
 
@@ -39,7 +39,7 @@ Sistema multi-tenant white-label para gestao completa de arenas de beach tennis.
 │  └──────────────┘  └──────────────┘  └──────────────┘ │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
 │  │  PostgreSQL   │  │  Storage     │  │  pg_cron     │ │
-│  │  + RLS (71t)  │  │  (arquivos)  │  │  + pg_net    │ │
+│  │  + RLS (76t)  │  │  (arquivos)  │  │  + pg_net    │ │
 │  └──────────────┘  └──────────────┘  └──────────────┘ │
 └────────────────────────────────────────────────────────┘
           │                  │                  │

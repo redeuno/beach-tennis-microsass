@@ -141,7 +141,7 @@ Cada transicao e registrada em `eventos_assinatura` para voce ter historico comp
 | Tabelas | 76 |
 | Tipos ENUM | 69 |
 | Views (relatorios) | 5 |
-| Policies RLS (seguranca) | ~120 |
+| Policies RLS (seguranca) | ~130 |
 | Triggers automaticos | ~58 |
 | Indices de performance | ~50 |
 
@@ -293,7 +293,8 @@ supabase/migrations/
 ├── 017_platform_enhancements.sql    # Multi-arena, trial, metricas
 ├── 018_platform_rls_triggers_indexes.sql  # Seguranca das tabelas novas
 ├── 019_edge_functions_support.sql   # Edge Functions, fila, chatbot AI, insights
-└── 020_edge_functions_rls_triggers_indexes.sql  # Seguranca das tabelas de automacao
+├── 020_edge_functions_rls_triggers_indexes.sql  # Seguranca das tabelas de automacao
+└── 021_infrastructure_auth_storage_seeds.sql    # Login automatico, storage, templates, pagamentos
 ```
 
 ---
