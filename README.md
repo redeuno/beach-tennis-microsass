@@ -132,7 +132,7 @@ verana-beach-tennis/
 │   ├── integrations/            # APIs externas
 │   └── guides/                  # Guias de implementacao
 ├── supabase/
-│   ├── migrations/              # 20 arquivos SQL (executar em ordem)
+│   ├── migrations/              # 21 arquivos SQL (executar em ordem)
 │   └── GUIA_EXECUCAO.md         # Guia passo-a-passo para executar o banco
 └── 11-beach-tennis-microsass/   # Documentos legados (arquivo)
     ├── current/                 # Versao consolidada legada

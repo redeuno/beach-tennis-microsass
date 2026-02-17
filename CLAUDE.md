@@ -223,15 +223,34 @@ super_admin > arena_admin > funcionario/professor > aluno
 | 2026-02-16 | Docs criados: edge-functions.md, ai-integration.md |
 | 2026-02-16 | Docs reescritos: automations.md, asaas.md, whatsapp.md, tech-stack.md, system-overview.md, deployment.md |
 | 2026-02-16 | Total final: 76 tabelas, 69 ENUMs, ~120 RLS policies, 5 views, 20 arquivos SQL |
+| 2026-02-17 | Auditoria infraestrutura: 5 gaps criticos encontrados (auth, storage, seeds) |
+| 2026-02-17 | Migration 021: handle_new_user trigger, auto_link_arena_proprietario, storage buckets |
+| 2026-02-17 | Migration 021: 9 templates WhatsApp padrao, 5 formas pagamento padrao, funcao register_arena() |
+| 2026-02-17 | Migration 021: 3 storage buckets (arenas publico, avatars privado, documentos privado) + RLS |
+| 2026-02-17 | Plano de implementacao criado: 10 etapas com checkpoints (PLANO_IMPLEMENTACAO.md) |
+| 2026-02-17 | Total final: 76 tabelas, 69 ENUMs, ~130 RLS policies, 5 views, 21 arquivos SQL |
+| 2026-02-17 | Auditoria profunda cross-reference: 7 bugs criticos encontrados e corrigidos na migration 021 |
+| 2026-02-17 | Fix: templates_whatsapp usava nomes errados (nome→nome_template, categoria→tipo_template, conteudo→mensagem) |
+| 2026-02-17 | Fix: coluna gatilho (NOT NULL) faltava nos INSERTs de templates_whatsapp |
+| 2026-02-17 | Fix: plano_atual_id→plano_sistema_id em register_arena() |
+| 2026-02-17 | Fix: ENUM tipo_template expandido (+cobranca, +onboarding, +relacionamento) |
+| 2026-02-17 | Fix: FK violation — templates base usam NULL arena_id (nao UUID zero) |
+| 2026-02-17 | Fix: 9 colunas da arenas tornadas nullable para fluxo de onboarding progressivo |
+| 2026-02-17 | Fix: register_arena() agora faz link explicito em usuarios_arenas (nao depende de trigger) |
+| 2026-02-17 | Fix: auto_link_arena_proprietario com ON CONFLICT DO NOTHING (idempotente) |
+| 2026-02-17 | Licao: SEMPRE fazer cross-reference de nomes de colunas/ENUMs entre migrations |
 
 ## Status Atual
 
-- **Fase:** Banco de dados completo e pronto para execucao (20 migrations SQL)
-- **Proximo passo:** Executar migrations no Supabase + implementar frontend Next.js (Prompt 2)
+- **Fase:** Banco de dados completo e pronto para execucao (21 migrations SQL)
+- **Proximo passo:** Executar migrations no Supabase (Etapa 1-2 do PLANO_IMPLEMENTACAO)
 - **Branch ativa:** `claude/identify-framework-OpdDy`
 - **Guia de execucao:** `supabase/GUIA_EXECUCAO.md`
+- **Plano de implementacao:** `docs/guides/PLANO_IMPLEMENTACAO.md`
 - **Guia de arquitetura (para o dono):** `docs/database/ARCHITECTURE_GUIDE.md`
-- **Numeros:** 76 tabelas, 69 ENUMs, ~120 RLS policies, 5 views, 20 arquivos SQL
+- **Numeros:** 76 tabelas, 69 ENUMs, ~130 RLS policies, 5 views, 21 arquivos SQL
 - **Automacoes:** 100% via Supabase (Edge Functions + pg_cron + pg_net) — zero dependencia de n8n
 - **AI:** Claude API integrado (chatbot WhatsApp + insights + campanhas)
 - **Edge Functions:** 14+ funcoes especificadas em `docs/integrations/edge-functions.md`
+- **Auth:** Trigger automatico auth.users → usuarios + registro completo via register_arena()
+- **Storage:** 3 buckets (arenas, avatars, documentos) com RLS por arena
