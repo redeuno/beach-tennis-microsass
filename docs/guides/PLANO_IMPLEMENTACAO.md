@@ -20,7 +20,7 @@
 
 ```
 ETAPA 1: Criar Projeto no Supabase (banco de dados)          [~30 min]
-ETAPA 2: Executar os 20 SQL Migrations                        [~1 hora]
+ETAPA 2: Executar os 21 SQL Migrations                        [~1 hora]
 ETAPA 3: Criar Projeto Next.js (frontend web)                 [~1 hora]
 ETAPA 4: Auth + Login + Onboarding                            [~1 semana]
 ETAPA 5: Dashboard + Gestao de Arenas + Quadras               [~2 semanas]
@@ -75,7 +75,7 @@ ETAPA 10: Deploy na Vercel + Go Live                          [~3 dias]
 
 ---
 
-## ETAPA 2: Executar os 20 SQL Migrations
+## ETAPA 2: Executar os 21 SQL Migrations
 
 **O que e:** Vamos criar todas as 76 tabelas, 69 tipos de dados, seguranca, e tudo mais no seu banco de dados. E como montar a estrutura de um predio — cada migration e um andar.
 
@@ -118,8 +118,9 @@ ETAPA 10: Deploy na Vercel + Go Live                          [~3 dias]
 | 18 | `018_platform_rls_triggers_indexes.sql` | ~5s | Seguranca multi-arena |
 | 19 | `019_edge_functions_support.sql` | ~5s | Chatbot AI e fila |
 | 20 | `020_edge_functions_rls_triggers_indexes.sql` | ~5s | Seguranca chatbot |
+| 21 | `021_infrastructure_auth_storage_seeds.sql` | ~10s | Login automatico, storage, templates, pagamentos |
 
-**2.3** Apos executar TODOS os 20, rode este SQL de verificacao:
+**2.3** Apos executar TODOS os 21, rode este SQL de verificacao:
 
 ```sql
 -- Deve retornar 76

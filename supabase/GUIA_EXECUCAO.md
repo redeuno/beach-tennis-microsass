@@ -35,7 +35,7 @@ Este guia foi feito para voce que **NAO e desenvolvedor** e precisa executar os 
 
 ### PASSO 3: Executar os arquivos na ORDEM CORRETA
 
-**IMPORTANTE: Voce DEVE executar os arquivos na ordem numerica (001, 002, 003... ate 020). NAO pule nenhum arquivo e NAO mude a ordem.**
+**IMPORTANTE: Voce DEVE executar os arquivos na ordem numerica (001, 002, 003... ate 021). NAO pule nenhum arquivo e NAO mude a ordem.**
 
 Para CADA arquivo, faca:
 
@@ -72,10 +72,11 @@ Para CADA arquivo, faca:
 | 18 | `018_platform_rls_triggers_indexes.sql` | Seguranca e indices para tabelas novas |
 | 19 | `019_edge_functions_support.sql` | Edge Functions, fila de mensagens, chatbot AI, insights |
 | 20 | `020_edge_functions_rls_triggers_indexes.sql` | Seguranca e indices para tabelas de automacao |
+| 21 | `021_infrastructure_auth_storage_seeds.sql` | **Login automatico**, storage, templates WhatsApp, formas pagamento |
 
 ### PASSO 4: Verificar se tudo foi criado corretamente
 
-Apos executar TODOS os 20 arquivos, execute este SQL no editor para verificar:
+Apos executar TODOS os 21 arquivos, execute este SQL no editor para verificar:
 
 ```sql
 -- Conta quantas tabelas foram criadas (esperado: 76)
